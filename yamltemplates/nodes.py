@@ -53,9 +53,10 @@ class BaseTemplate:
             return tag
         return ':'.join((tag, data.subtag))
 
-    def __init__(self, data, subtag=None):
+    def __init__(self, data, subtag=None, orig_node=None):
         self.data = data
         self.subtag = subtag
+        self.orig_node = orig_node
 
     def get_globals(self, ctx):
         return {
@@ -72,10 +73,12 @@ class ScalarTemplate(BaseTemplate):
     @classmethod
     def from_yaml(cls, loader, subtag, node):
         data = loader.construct_scalar(node)
-        return cls(data, subtag)
+        return cls(data, subtag, orig_node=node)
 
     @classmethod
     def to_yaml(cls, dumper, data):
+        if data.orig_node is not None:
+            return data.orig_node
         tag = cls._expand_tag(dumper, data)
         return dumper.represent_scalar(tag, data.data)
 
@@ -97,10 +100,12 @@ class SequenceTemplate(BaseTemplate):
     @classmethod
     def from_yaml(cls, loader, subtag, node):
         data = loader.construct_sequence(node, deep=True)
-        return cls(data, subtag)
+        return cls(data, subtag, orig_node=node)
 
     @classmethod
     def to_yaml(cls, dumper, data):
+        if data.orig_node is not None:
+            return data.orig_node
         tag = cls._expand_tag(dumper, data)
         return dumper.represent_sequence(tag, data.data)
 
@@ -129,10 +134,12 @@ class MappingTemplate(BaseTemplate):
             (loader.construct_object(k, True), loader.construct_object(v, True))
             for k, v in node.value
         ]
-        return cls(data, subtag)
+        return cls(data, subtag, orig_node=node)
 
     @classmethod
     def to_yaml(cls, dumper, data):
+        if data.orig_node is not None:
+            return data.orig_node
         tag = cls._expand_tag(dumper, data)
         return dumper.represent_mapping(tag, data.data)
 
@@ -227,7 +234,7 @@ class BaseComprehension(BaseTemplate):
         ret_tmpl = None
         if_tmpl = None
         for left, right in value:
-            left = loader.construct_object(left)
+            left = loader.construct_object(left, deep=True)
             if left == 'ret':
                 ret_tmpl = BaseTemplate.from_yaml(loader, None, right)
             elif left == 'if':
@@ -258,7 +265,7 @@ class BaseComprehension(BaseTemplate):
             )
         return yaml.MappingNode(tag, value)
 
-    def __init__(self, arglist, items, ret_tmpl, if_tmpl=None, subtag=None):
+    def __init__(self, arglist, items, ret_tmpl, if_tmpl=None, subtag=None, orig_node=None):
         if not isinstance(arglist, str):
             arglist = ', '.join(arglist)
         self.arglist = arglist
@@ -267,6 +274,7 @@ class BaseComprehension(BaseTemplate):
         self.ret_tmpl = ret_tmpl
         self.if_tmpl = if_tmpl
         self.subtag = subtag
+        self.orig_node = orig_node
 
     def _execute(self, ctx):
         globals = self.get_globals(ctx)
@@ -290,10 +298,15 @@ class BaseComprehension(BaseTemplate):
 class SequenceComprehension(SequenceTemplate, BaseComprehension):
     @classmethod
     def from_yaml(cls, loader, subtag, node):
-        return cls(subtag=subtag, **cls._construct_forinfo(loader, node.value[0].value))
+        return cls(
+            subtag=subtag, orig_node=node,
+            **cls._construct_forinfo(loader, node.value[0].value)
+        )
 
     @classmethod
     def to_yaml(cls, dumper, data):
+        if data.orig_node is not None:
+            return data.orig_node
         tag = cls._expand_tag(dumper, data)
         node = dumper.represent_sequence(tag, [])
         node.value = [cls._represent_forinfo(dumper, data)]
@@ -310,10 +323,15 @@ TemplateDumper.add_representer(SequenceComprehension, SequenceComprehension.to_y
 class MappingComprehension(MappingTemplate, BaseComprehension):
     @classmethod
     def from_yaml(cls, loader, subtag, node):
-        return cls(subtag=subtag, **cls._construct_forinfo(loader, node.value))
+        return cls(
+            subtag=subtag, orig_node=node,
+            **cls._construct_forinfo(loader, node.value)
+        )
 
     @classmethod
     def to_yaml(cls, dumper, data):
+        if data.orig_node is not None:
+            return data.orig_node
         tag = cls._expand_tag(dumper, data)
         return cls._represent_forinfo(dumper, data, tag)
 
