@@ -1,26 +1,31 @@
 __all__ = [
     'SENTINEL',
-    'AttrChainMap',
+    'Context',
     'render_all',
 ]
 
+from contextlib import contextmanager
 from collections import ChainMap
 
 
 SENTINEL = object()
 
 
-class AttrChainMap(ChainMap):
-    def __getattr__(self, name):
+class Context(ChainMap):
+    @contextmanager
+    def push(self, dct=None, pos=0):
+        if dct is None:
+            dct = {}
+        self.maps.insert(pos, dct)
         try:
-            return self[name]
-        except KeyError:
-            return super().__getattr__(name)
+            yield self
+        finally:
+            del self.maps[pos]
 
 
 def render_all(tmpls, ctx=None):
     if ctx is None:
-        ctx = AttrChainMap()
+        ctx = Context()
     for tmpl in tmpls:
         result = tmpl.render(ctx)
         if result is SENTINEL:

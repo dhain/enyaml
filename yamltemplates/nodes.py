@@ -1,102 +1,203 @@
 __all__ = [
+    'ScalarTemplate',
+    'SequenceTemplate',
+    'MappingTemplate',
     'Setter',
     'Expression',
     'FormatString',
     'If',
-    'For',
-    'Template',
+    'SequenceComprehension',
+    'MappingComprehension',
 ]
 
 import yaml
 import copy
+from itertools import chain
 from .loader import TemplateLoader
 from .dumper import TemplateDumper
 from .util import SENTINEL
 
 
-class Setter(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
-    yaml_tag = '!set'
+class BaseTemplate:
+    tag_prefix = '!'
+    tag_suffix = 'tmpl'
+    _map = {}
 
     @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(loader, loader.construct_mapping(node))
+    def _register(cls, template_cls, node_cls):
+        cls._map[template_cls.tag_suffix, node_cls] = template_cls
 
     @classmethod
-    def to_yaml(cls, dumper, data):
-        return dumper.represent_mapping(cls.yaml_tag, data.data)
+    def from_yaml(cls, loader, tag, node):
+        if tag is None:
+            tag = node.tag
+            if tag.startswith(cls.tag_prefix):
+                tag = tag[len(cls.tag_prefix):]
+            else:
+                tag = f'tmpl:{tag}'
+        tag, *subtag = tag.split(':', 1)
+        if subtag:
+            subtag, = subtag
+        else:
+            subtag = None
+        return cls._map[tag, type(node)].from_yaml(loader, subtag, node)
 
-    def __init__(self, loader, data):
-        self.loader = loader
+    @classmethod
+    def _expand_tag(cls, dumper, data):
+        tag = f'{cls.tag_prefix}{data.tag_suffix}'
+        if data.subtag is None or data.subtag in (
+            dumper.DEFAULT_SCALAR_TAG,
+            dumper.DEFAULT_SEQUENCE_TAG,
+            dumper.DEFAULT_MAPPING_TAG
+        ):
+            return tag
+        return ':'.join((tag, data.subtag))
+
+    def __init__(self, data, subtag=None):
         self.data = data
-
-    def render(self, ctx):
-        self.loader.clear_constructed_nodes(self)
-        ctx.update(self.data)
-        return SENTINEL
-
-
-class Expression(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
-    yaml_tag = '!$'
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(loader, loader.construct_scalar(node), node.style)
-
-    @classmethod
-    def to_yaml(cls, dumper, data):
-        return dumper.represent_scalar(cls.yaml_tag, data.expr, data.style)
-
-    def __init__(self, loader, expr, style=None):
-        self.loader = loader
-        self.expr = expr
-        self.style = style
+        self.subtag = subtag
 
     def get_globals(self, ctx):
         return {
             '__builtins__': {},
-            'loader': self.loader,
             'ctx': ctx
         }
 
-    def render(self, ctx):
-        self.loader.clear_constructed_nodes(self)
-        globals = self.get_globals(ctx)
-        return eval(self.expr, globals, ctx)
+
+TemplateLoader.template_base_class = BaseTemplate
+TemplateLoader.add_multi_constructor(BaseTemplate.tag_prefix, BaseTemplate.from_yaml)
 
 
-class FormatString(Expression):
-    yaml_tag = '!$f'
-
-    def render(self, ctx):
-        return self.expr.format(**ctx)
-
-
-class If(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
-    yaml_tag = '!if'
-
+class ScalarTemplate(BaseTemplate):
     @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(loader, loader.construct_sequence(node), node.flow_style)
+    def from_yaml(cls, loader, subtag, node):
+        data = loader.construct_scalar(node)
+        return cls(data, subtag)
 
     @classmethod
     def to_yaml(cls, dumper, data):
-        return dumper.represent_sequence(
-            cls.yaml_tag, data.if_list, data.flow_style)
+        tag = cls._expand_tag(dumper, data)
+        return dumper.represent_scalar(tag, data.data)
 
-    def __init__(self, loader, if_list, flow_style=None):
-        self.loader = loader
-        self.if_list = if_list
-        self.flow_style = flow_style
+    def render(self, ctx, render_subtemplates=True):
+        data = self.data
+        if (
+            hasattr(data, 'render') and
+            (render_subtemplates or not isinstance(data, BaseTemplate))
+        ):
+            data = data.render(ctx)
+        return data
+
+
+BaseTemplate._register(ScalarTemplate, yaml.ScalarNode)
+TemplateDumper.add_representer(ScalarTemplate, ScalarTemplate.to_yaml)
+
+
+class SequenceTemplate(BaseTemplate):
+    @classmethod
+    def from_yaml(cls, loader, subtag, node):
+        data = loader.construct_sequence(node, deep=True)
+        return cls(data, subtag)
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        tag = cls._expand_tag(dumper, data)
+        return dumper.represent_sequence(tag, data.data)
+
+    def render(self, ctx, render_subtemplates=True):
+        value = []
+        for i in self.data:
+            if (
+                hasattr(i, 'render') and
+                (render_subtemplates or not isinstance(i, BaseTemplate))
+            ):
+                i = i.render(ctx)
+            if i is not SENTINEL:
+                value.append(i)
+        return value
+
+
+BaseTemplate._register(SequenceTemplate, yaml.SequenceNode)
+TemplateDumper.add_representer(SequenceTemplate, SequenceTemplate.to_yaml)
+
+
+class MappingTemplate(BaseTemplate):
+    @classmethod
+    def from_yaml(cls, loader, subtag, node):
+        loader.flatten_mapping(node)
+        data = [
+            (loader.construct_object(k, True), loader.construct_object(v, True))
+            for k, v in node.value
+        ]
+        return cls(data, subtag)
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        tag = cls._expand_tag(dumper, data)
+        return dumper.represent_mapping(tag, data.data)
+
+    def render(self, ctx, render_subtemplates=True):
+        value = {}
+        for k, v in self.data:
+            if (
+                hasattr(k, 'render') and
+                (render_subtemplates or not isinstance(k, BaseTemplate))
+            ):
+                k = k.render(ctx)
+            if (
+                hasattr(v, 'render') and
+                (render_subtemplates or not isinstance(v, BaseTemplate))
+            ):
+                v = v.render(ctx)
+            if SENTINEL not in (k, v):
+                value[k] = v
+        return value
+
+
+BaseTemplate._register(MappingTemplate, yaml.MappingNode)
+TemplateDumper.add_representer(MappingTemplate, MappingTemplate.to_yaml)
+
+
+class Setter(MappingTemplate):
+    tag_suffix = 'set'
 
     def render(self, ctx):
-        self.loader.clear_constructed_nodes(self)
-        rest = self.if_list
+        ctx.update(super().render(ctx, render_subtemplates=False))
+        return SENTINEL
+
+
+BaseTemplate._register(Setter, yaml.MappingNode)
+TemplateDumper.add_representer(Setter, Setter.to_yaml)
+
+
+class Expression(ScalarTemplate):
+    tag_suffix = '$'
+
+    def render(self, ctx):
+        globals = self.get_globals(ctx)
+        return eval(self.data, globals, ctx)
+
+
+BaseTemplate._register(Expression, yaml.ScalarNode)
+TemplateDumper.add_representer(Expression, Expression.to_yaml)
+
+
+class FormatString(Expression):
+    tag_suffix = '$f'
+
+    def render(self, ctx):
+        return self.data.format(**ctx)
+
+
+BaseTemplate._register(FormatString, yaml.ScalarNode)
+TemplateDumper.add_representer(FormatString, FormatString.to_yaml)
+
+
+class If(SequenceTemplate):
+    tag_suffix = 'if'
+
+    def render(self, ctx):
+        rest = self.data
         while rest:
             if len(rest) == 1:
                 result, = rest
@@ -113,153 +214,112 @@ class If(yaml.YAMLObject):
         return result
 
 
-class For(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
-    yaml_tag = '!for'
+BaseTemplate._register(If, yaml.SequenceNode)
+TemplateDumper.add_representer(If, If.to_yaml)
+
+
+class BaseComprehension(BaseTemplate):
+    tag_suffix = 'for'
 
     @classmethod
-    def from_yaml(cls, loader, node):
-        self = object.__new__(cls)
-        self.loader = loader
-        self.node = node
-        self.add_tag = True
-        return self
-
-    @classmethod
-    def to_yaml(cls, dumper, data):
-        if data.add_tag:
-            node = copy.copy(data.node)
-            node.tag = cls.yaml_tag
-        else:
-            node = data.node
-        return node
-
-    def __init__(
-        self, loader, kind, arglist, obj, value_tmpl, if_tmpl=None, flow_style=None
-    ):
-        self.loader = loader
-        self.add_tag = False
-        value = [
-            (obj, arglist),
-            ('ret', value_tmpl),
-        ]
-        if if_tmpl is not None:
-            value.append(('if', if_tmpl))
-        if kind == 'sequence':
-            self.node = yaml.SequenceNode(self.yaml_tag, value, flow_style)
-        elif kind == 'mapping':
-            self.node = yaml.MappingNode(self.yaml_tag, value, flow_style)
-
-    def get_globals(self, ctx):
+    def _construct_forinfo(cls, loader, value):
+        items = None
+        ret_tmpl = None
+        if_tmpl = None
+        for left, right in value:
+            left = loader.construct_object(left)
+            if left == 'ret':
+                ret_tmpl = BaseTemplate.from_yaml(loader, None, right)
+            elif left == 'if':
+                if_tmpl = loader.construct_object(right, deep=True)
+            elif items is None:
+                items = left
+                arglist = loader.construct_object(right, deep=True)
+            else:
+                raise ValueError('items already set')
         return {
-            '__builtins__': {},
-            'loader': self.loader,
-            'ctx': ctx
+            'items': items,
+            'ret_tmpl': ret_tmpl,
+            'if_tmpl': if_tmpl,
+            'arglist': arglist,
         }
 
-    def render(self, ctx):
-        self.loader.clear_constructed_nodes(self.node)
-        if isinstance(self.node, yaml.SequenceNode):
-            fornode, = self.node.value
-        elif isinstance(self.node, yaml.MappingNode):
-            fornode = self.node
-        else:
-            raise TypeError('wrong kind of node')
-
-        value = []
-        objs = None
-        tmpls = {}
-        for left, right in fornode.value:
-            left = self.loader.construct_object(left, deep=True)
-            if isinstance(left, str) and left in {'ret', 'if'}:
-                tmpls[left] = Template(self.loader, right)
-            elif objs is None:
-                objs = left
-                if hasattr(objs, 'render'):
-                    objs = objs.render(ctx)
-                arglist = self.loader.construct_object(right, deep=True)
-                if isinstance(arglist, str):
-                    arglist = (arglist,)
-                arglist = ', '.join(arglist)
-                code = compile(f'{arglist} = obj', '', 'exec')
-            else:
-                raise ValueError('objs already set')
-
-        test = True
-        globals = self.get_globals(ctx)
-        for obj in objs:
-            ctx.maps.insert(0, {'obj': obj})
-            ctx.maps.insert(0, {})
-            exec(code, globals, ctx)
-            del ctx.maps[1] # obj
-            ret = tmpls['ret'].render(ctx)
-            if 'if' in tmpls:
-                test = tmpls['if'].render(ctx)
-            if test:
-                value.append(ret)
-            del ctx.maps[0]
-
-        if isinstance(self.node, yaml.MappingNode):
-            d = {}
-            for i in value:
-                d.update(i)
-            value = d
-
-        return value
-
-
-class Template(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
-    yaml_tag = '!tmpl'
-
     @classmethod
-    def from_yaml(cls, loader, node):
-        if node.tag == cls.yaml_tag:
-            node = copy.copy(node)
-            node.tag = loader.resolve(type(node), None, (None, None))
-        return cls(loader, node)
+    def _represent_forinfo(cls, dumper, data, tag=None):
+        if tag is None:
+            tag = dumper.DEFAULT_MAPPING_TAG
+        value = [
+            (dumper.represent_data(data.items), dumper.represent_data(data.arglist)),
+            (dumper.represent_data('ret'), dumper.represent_data(data.ret_tmpl)),
+        ]
+        if data.if_tmpl is not None:
+            value.append(
+                (dumper.represent_data('if'), dumper.represent_data(data.if_tmpl))
+            )
+        return yaml.MappingNode(tag, value)
+
+    def __init__(self, arglist, items, ret_tmpl, if_tmpl=None, subtag=None):
+        if not isinstance(arglist, str):
+            arglist = ', '.join(arglist)
+        self.arglist = arglist
+        self.code = compile(f'{arglist} = item', '', 'exec')
+        self.items = items
+        self.ret_tmpl = ret_tmpl
+        self.if_tmpl = if_tmpl
+        self.subtag = subtag
+
+    def _execute(self, ctx):
+        globals = self.get_globals(ctx)
+        if hasattr(self.items, 'render'):
+            items = self.items.render(ctx)
+        else:
+            items = self.items
+        for item in items:
+            with ctx.push():
+                with ctx.push({'item': item}, 1):
+                    exec(self.code, globals, ctx)
+                ret = self.ret_tmpl.render(ctx)
+                if (
+                    self.if_tmpl is None or
+                    (hasattr(self.if_tmpl, 'render') and self.if_tmpl.render(ctx)) or
+                    self.if_tmpl
+                ):
+                    yield ret
+
+
+class SequenceComprehension(SequenceTemplate, BaseComprehension):
+    @classmethod
+    def from_yaml(cls, loader, subtag, node):
+        return cls(subtag=subtag, **cls._construct_forinfo(loader, node.value[0].value))
 
     @classmethod
     def to_yaml(cls, dumper, data):
-        if data.add_tag:
-            node = copy.copy(data.node)
-            node.tag = cls.yaml_tag
-        else:
-            node = data.node
+        tag = cls._expand_tag(dumper, data)
+        node = dumper.represent_sequence(tag, [])
+        node.value = [cls._represent_forinfo(dumper, data)]
         return node
 
-    def __init__(self, loader, node, add_tag=True):
-        self.loader = loader
-        self.node = node
-        self.add_tag = add_tag
+    def render(self, ctx):
+        return list(self._execute(ctx))
+
+
+BaseTemplate._register(SequenceComprehension, yaml.SequenceNode)
+TemplateDumper.add_representer(SequenceComprehension, SequenceComprehension.to_yaml)
+
+
+class MappingComprehension(MappingTemplate, BaseComprehension):
+    @classmethod
+    def from_yaml(cls, loader, subtag, node):
+        return cls(subtag=subtag, **cls._construct_forinfo(loader, node.value))
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        tag = cls._expand_tag(dumper, data)
+        return cls._represent_forinfo(dumper, data, tag)
 
     def render(self, ctx):
-        self.loader.clear_constructed_nodes(self.node)
-        value = self.loader.construct_object(self.node, deep=True)
+        return dict(chain.from_iterable(i.items() for i in self._execute(ctx)))
 
-        if hasattr(value, 'render'):
-            return value.render(ctx)
 
-        elif isinstance(value, list):
-            l = []
-            for i in value:
-                if hasattr(i, 'render'):
-                    i = i.render(ctx)
-                if i is not SENTINEL:
-                    l.append(i)
-            value = l
-
-        elif isinstance(value, dict):
-            d = {}
-            for k, v in value.items():
-                if hasattr(k, 'render'):
-                    k = k.render(ctx)
-                if hasattr(v, 'render'):
-                    v = v.render(ctx)
-                if SENTINEL not in (k, v):
-                    d[k] = v
-            value = d
-
-        return value
+BaseTemplate._register(MappingComprehension, yaml.MappingNode)
+TemplateDumper.add_representer(MappingComprehension, MappingComprehension.to_yaml)
