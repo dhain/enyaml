@@ -8,35 +8,37 @@ from yaml.composer import ComposerError
 from . import nodes
 
 
-TAG_RX = re.compile(r'(!(?:[^!]*!)?)?(.*)$')
+TAG_RX = re.compile(r'(!(?:[0-9a-zA-Z-_]*!)?)?(.*)$')
 
 
 class TemplateLoader(yaml.SafeLoader):
-    TMPL_MAP = {}
+    TAG_MAP = {}
     DEFAULT_TAGS = yaml.SafeLoader.DEFAULT_TAGS.copy()
-    DEFAULT_TAGS['!'] = nodes.TMPL_PREFIX
+    DEFAULT_TAGS['!'] = nodes.TAG_PREFIX
 
-    def render_data(self, ctx):
+    def _render_next_node(self, ctx):
         while self.check_node():
             node = self.get_node()
             if hasattr(node, 'render'):
                 node = node.render(self, ctx)
             if node:
-                return self.construct_document(node)
+                return node
+
+    def render_data(self, ctx):
+        node = self._render_next_node(ctx)
+        if node:
+            return self.construct_document(node)
 
     def render_single_data(self, ctx):
-        node = None
-        while self.check_node():
-            node = self.get_node().render(self, ctx)
-            if node:
-                break
+        node = self._render_next_node(ctx)
         if self.check_node():
             event = self.get_event()
             raise ComposerError(
                 'expected a single document', node.start_mark,
                 'but found another document', event.start_mark
             )
-        return node
+        if node:
+            return self.construct_document(node)
 
     def render_all(self, ctx):
         while self.check_data():
@@ -51,13 +53,13 @@ class TemplateLoader(yaml.SafeLoader):
         event = super().parse_node(block, indentless_sequence)
         if isinstance(event, yaml.ScalarEvent) and (
             event.tag is None or
-            not event.tag.startswith(nodes.TMPL_PREFIX)
+            not event.tag.startswith(nodes.TAG_PREFIX)
         ):
             return event
         if event.tag is None:
-            event.tag = f'{nodes.TMPL_PREFIX}tmpl'
-        elif not event.tag.startswith(nodes.TMPL_PREFIX):
-            event.tag = f'{nodes.TMPL_PREFIX}tmpl:{event.tag}'
+            event.tag = f'{nodes.TAG_PREFIX}tmpl'
+        elif not event.tag.startswith(nodes.TAG_PREFIX):
+            event.tag = f'{nodes.TAG_PREFIX}tmpl:{event.tag}'
         event.basetag, event.subtag, event.skip_render = nodes.split_tag(event.tag)
         if event.subtag:
             m = TAG_RX.match(event.subtag)
@@ -76,11 +78,10 @@ class TemplateLoader(yaml.SafeLoader):
             return node
         for cls in type(node).__mro__:
             try:
-                node.__class__ = self.TMPL_MAP[event.basetag, cls]
+                node.__class__ = self.TAG_MAP[event.basetag, cls]
             except KeyError:
                 continue
             break
-        node.basetag = event.basetag
         node.subtag = event.subtag
         node.skip_render = event.skip_render
         return node
@@ -88,5 +89,5 @@ class TemplateLoader(yaml.SafeLoader):
 
 for name in nodes.__all__:
     obj = getattr(nodes, name)
-    if hasattr(obj, 'tmpl_tag') and hasattr(obj, 'node_type'):
-        TemplateLoader.TMPL_MAP[obj.tmpl_tag, obj.node_type] = obj
+    if hasattr(obj, 'basetag') and hasattr(obj, 'node_type'):
+        TemplateLoader.TAG_MAP[obj.basetag, obj.node_type] = obj

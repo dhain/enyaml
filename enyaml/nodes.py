@@ -15,12 +15,12 @@ import functools
 import yaml
 
 
-TMPL_PREFIX = 'tag:kubernaughties.com/tmpl,2022:'
+TAG_PREFIX = 'tag:enyaml.org,2022:'
 
 
 def split_tag(tag):
-    if tag.startswith(TMPL_PREFIX):
-        basetag, *subtag = tag[len(TMPL_PREFIX):].split(':', 1)
+    if tag.startswith(TAG_PREFIX):
+        basetag, *subtag = tag[len(TAG_PREFIX):].split(':', 1)
         if basetag[-1] == '~':
             basetag = basetag[:-1]
             skip_render = True
@@ -36,7 +36,7 @@ def split_tag(tag):
 
 def unsplit_tag(basetag, subtag, skip_render):
     return ''.join((
-        TMPL_PREFIX, basetag,
+        TAG_PREFIX, basetag,
         '~' if skip_render else '',
         ':', subtag
     ))
@@ -56,7 +56,7 @@ def user_render(loader, ctx, tmpl, local_ctx=None):
 
 
 class BaseTemplateNode:
-    tmpl_tag = 'tmpl'
+    basetag = 'tmpl'
 
     @classmethod
     def to_yaml(cls, dumper, data):
@@ -124,7 +124,7 @@ class MappingTemplateNode(BaseCollectionTemplateNode, yaml.MappingNode):
 
 
 class SetterNode(MappingTemplateNode):
-    tmpl_tag = 'set'
+    basetag = 'set'
 
     def render(self, loader, ctx):
         ctx.update(
@@ -139,7 +139,7 @@ class SetterNode(MappingTemplateNode):
 
 
 class ExpressionNode(ScalarTemplateNode):
-    tmpl_tag = '$'
+    basetag = '$'
 
     def render(self, loader, ctx):
         globals = self.get_globals(loader, ctx)
@@ -155,7 +155,7 @@ class ExpressionNode(ScalarTemplateNode):
 
 
 class FormatStringNode(ScalarTemplateNode):
-    tmpl_tag = '$f'
+    basetag = '$f'
 
     def render(self, loader, ctx):
         dct = self.get_globals(loader, ctx)
@@ -166,7 +166,7 @@ class FormatStringNode(ScalarTemplateNode):
 
 
 class IfNode(SequenceTemplateNode):
-    tmpl_tag = 'if'
+    basetag = 'if'
 
     def render(self, loader, ctx):
         rest = self.value
@@ -184,7 +184,7 @@ class IfNode(SequenceTemplateNode):
 
 
 class BaseForNode(BaseTemplateNode):
-    tmpl_tag = 'for'
+    basetag = 'for'
 
     def _forinfo(self, loader, ctx):
         items = None

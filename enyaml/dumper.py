@@ -8,12 +8,12 @@ from . import nodes
 
 class TemplateDumper(yaml.SafeDumper):
     DEFAULT_TAG_PREFIXES = yaml.SafeDumper.DEFAULT_TAG_PREFIXES.copy()
-    DEFAULT_TAG_PREFIXES[nodes.TMPL_PREFIX] = '!'
+    DEFAULT_TAG_PREFIXES[nodes.TAG_PREFIX] = '!'
 
     def choose_scalar_style(self):
         style = super().choose_scalar_style()
         if (
-            self.event.tag.startswith(nodes.TMPL_PREFIX) and
+            self.event.tag.startswith(nodes.TAG_PREFIX) and
             not self.event.style and
             (not (self.simple_key_context and
                     (self.analysis.empty or self.analysis.multiline))
@@ -28,7 +28,7 @@ class TemplateDumper(yaml.SafeDumper):
         if subtag:
             subtag = super().prepare_tag(subtag)
             tag = nodes.unsplit_tag(basetag, subtag, skip_render)
-        elif basetag == 'tmpl' and not skip_render:
+        elif basetag == nodes.BaseTemplateNode.basetag and not skip_render:
             return ''
         return super().prepare_tag(tag)
 
