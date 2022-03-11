@@ -31,6 +31,23 @@ add_representer = partial(yaml.add_representer, Dumper=TemplateDumper)
 add_multi_representer = partial(yaml.add_multi_representer, Dumper=TemplateDumper)
 
 
+def render(stream, ctx, Loader=TemplateLoader):
+    loader = Loader(stream)
+    try:
+        return loader.render_single_data(ctx)
+    finally:
+        loader.dispose()
+
+
+def render_all(stream, ctx, Loader=TemplateLoader):
+    loader = Loader(stream)
+    try:
+        while loader.check_data():
+            yield loader.render_data(ctx)
+    finally:
+        loader.dispose()
+
+
 class YAMLObject(yaml.YAMLObject):
     yaml_loader = TemplateLoader
     yaml_dumper = TemplateDumper

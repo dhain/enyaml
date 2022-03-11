@@ -40,10 +40,6 @@ class TemplateLoader(yaml.SafeLoader):
         if node:
             return self.construct_document(node)
 
-    def render_all(self, ctx):
-        while self.check_data():
-            yield self.render_data(ctx)
-
     def construct_object(self, node, deep=False):
         if getattr(node, 'skip_render', False):
             return node

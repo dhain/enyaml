@@ -33,7 +33,7 @@ def unsplit_tag(basetag, subtag, skip_render):
     return ''.join((
         TAG_PREFIX, basetag,
         '~' if skip_render else '',
-        ':', subtag
+        ':'+subtag if subtag else ''
     ))
 
 
@@ -90,8 +90,28 @@ class BaseTemplateNode:
 class ScalarTemplateNode(BaseTemplateNode, yaml.ScalarNode):
     node_type = yaml.ScalarNode
 
+    def __init__(
+        self, value, start_mark=None, end_mark=None,
+        style=None, subtag=None, skip_render=False
+    ):
+        self.subtag = subtag
+        self.skip_render = skip_render
+        tag = unsplit_tag(self.basetag, subtag, skip_render)
+        yaml.ScalarNode.__init__(
+            self, tag, value, start_mark, end_mark, style)
+
 
 class BaseCollectionTemplateNode(BaseTemplateNode):
+    def __init__(
+        self, value, start_mark=None, end_mark=None,
+        flow_style=None, subtag=None, skip_render=False
+    ):
+        self.subtag = subtag
+        self.skip_render = skip_render
+        tag = unsplit_tag(self.basetag, subtag, skip_render)
+        yaml.CollectionNode.__init__(
+            self, tag, value, start_mark, end_mark, flow_style)
+
     def render_value(self, loader, ctx):
         return self.value
 
