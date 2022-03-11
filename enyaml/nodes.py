@@ -21,15 +21,10 @@ TAG_PREFIX = 'tag:enyaml.org,2022:'
 def split_tag(tag):
     if tag.startswith(TAG_PREFIX):
         basetag, *subtag = tag[len(TAG_PREFIX):].split(':', 1)
-        if basetag[-1] == '~':
+        skip_render = (basetag[-1] == '~')
+        if skip_render:
             basetag = basetag[:-1]
-            skip_render = True
-        else:
-            skip_render = False
-        if subtag:
-            subtag, = subtag
-        else:
-            subtag = None
+        subtag = subtag[0] if subtag else None
         return basetag, subtag, skip_render
     return None, None, None
 
@@ -55,36 +50,41 @@ def user_render(loader, ctx, tmpl, local_ctx=None):
         return loader.construct_object(tmpl.render(loader, ctx), deep=True)
 
 
+def get_globals(loader, ctx):
+    return {
+        '__builtins__': {
+            'list': list,
+            'render': functools.partial(user_render, loader, ctx),
+        },
+        'ctx': ctx,
+    }
+
+
 class BaseTemplateNode:
     basetag = 'tmpl'
 
     @classmethod
     def to_yaml(cls, dumper, data):
         node = copy.copy(data)
-        if node.subtag == dumper.resolve(cls.node_type, None, (None, None)):
-            node.tag = node.tag[:len(node.subtag)]
+        if data.subtag == dumper.resolve(cls.node_type, None, (None, None)):
+            node.tag = node.tag[:len(data.subtag)]
             node.subtag = None
         return node
 
-    def get_globals(self, loader, ctx):
-        return {
-            '__builtins__': {
-                'list': list,
-                'render': functools.partial(user_render, loader, ctx),
-            },
-            'loader': loader,
-            'ctx': ctx
-        }
+    def make_result_node(self, loader, value, implicit=True):
+        node = copy.copy(self)
+        node.__class__ = self.node_type
+        node.__dict__.pop('subtag', None)
+        node.__dict__.pop('skip_render', None)
+        if self.subtag is None:
+            node.tag = loader.resolve(self.node_type, value, (implicit, False))
+        else:
+            node.tag = self.subtag
+        node.value = value
+        return node
 
     def render(self, loader, ctx):
-        new = copy.copy(self)
-        new.__class__ = self.node_type
-        new.skip_render = False
-        if self.subtag is None:
-            new.tag = loader.resolve(self.node_type, None, (None, None))
-        else:
-            new.tag = self.subtag
-        return new
+        return self.make_result_node(loader, self.value)
 
 
 class ScalarTemplateNode(BaseTemplateNode, yaml.ScalarNode):
@@ -92,7 +92,7 @@ class ScalarTemplateNode(BaseTemplateNode, yaml.ScalarNode):
 
 
 class BaseCollectionTemplateNode(BaseTemplateNode):
-    def _render(self, loader, ctx):
+    def render_value(self, loader, ctx):
         return self.value
 
 
@@ -100,27 +100,25 @@ class SequenceTemplateNode(BaseCollectionTemplateNode, yaml.SequenceNode):
     node_type = yaml.SequenceNode
 
     def render(self, loader, ctx):
-        new = super().render(loader, ctx)
-        new.value = []
-        for item in self._render(loader, ctx):
+        value = []
+        for item in self.render_value(loader, ctx):
             item = maybe_render(item, loader, ctx)
             if item is not None:
-                new.value.append(item)
-        return new
+                value.append(item)
+        return self.make_result_node(loader, value)
 
 
 class MappingTemplateNode(BaseCollectionTemplateNode, yaml.MappingNode):
     node_type = yaml.MappingNode
 
     def render(self, loader, ctx):
-        new = super().render(loader, ctx)
-        new.value = []
-        for key, value in self._render(loader, ctx):
-            key = maybe_render(key, loader, ctx)
-            value = maybe_render(value, loader, ctx)
-            if None not in (key, value):
-                new.value.append((key, value))
-        return new
+        value = []
+        for item_key, item_value in self.render_value(loader, ctx):
+            item_key = maybe_render(item_key, loader, ctx)
+            item_value = maybe_render(item_value, loader, ctx)
+            if None not in (item_key, item_value):
+                value.append((item_key, item_value))
+        return self.make_result_node(loader, value)
 
 
 class SetterNode(MappingTemplateNode):
@@ -142,27 +140,23 @@ class ExpressionNode(ScalarTemplateNode):
     basetag = '$'
 
     def render(self, loader, ctx):
-        globals = self.get_globals(loader, ctx)
+        globals = get_globals(loader, ctx)
         value = eval(self.value, globals, ctx)
         if isinstance(value, BaseTemplateNode):
-            new = maybe_render(value, loader, ctx)
+            return maybe_render(value, loader, ctx)
         elif isinstance(value, yaml.Node):
-            new = value
-        else:
-            new = super().render(loader, ctx)
-            new.value = value
-        return new
+            return value
+        return self.make_result_node(loader, value, implicit=False)
 
 
 class FormatStringNode(ScalarTemplateNode):
     basetag = '$f'
 
     def render(self, loader, ctx):
-        dct = self.get_globals(loader, ctx)
+        dct = get_globals(loader, ctx)
         dct.update(ctx)
-        new = super().render(loader, ctx)
-        new.value = self.value.format(**dct)
-        return new
+        return self.make_result_node(
+            loader, self.value.format(**dct))
 
 
 class IfNode(SequenceTemplateNode):
@@ -207,9 +201,9 @@ class BaseForNode(BaseTemplateNode):
         code = compile(f'{arglist} = item', '', 'exec')
         return items, ret_tmpl, if_tmpl, code
 
-    def _render(self, loader, ctx):
+    def render_value(self, loader, ctx):
         items, ret_tmpl, if_tmpl, code = self._forinfo(loader, ctx)
-        globals = self.get_globals(loader, ctx)
+        globals = get_globals(loader, ctx)
         items = maybe_render(items, loader, ctx)
         for item in loader.construct_object(items, deep=True):
             with ctx.push():
@@ -235,7 +229,7 @@ class MappingForNode(BaseForNode, MappingTemplateNode):
     def _value(self):
         return self.value
 
-    def _render(self, loader, ctx):
-        for node in super()._render(loader, ctx):
+    def render_value(self, loader, ctx):
+        for node in super().render_value(loader, ctx):
             for item in node.value:
                 yield item
