@@ -24,11 +24,11 @@ class TemplateDumper(yaml.SafeDumper):
         return style
 
     def prepare_tag(self, tag):
-        basetag, subtag = nodes.split_tag(tag)
+        basetag, subtag, skip_render = nodes.split_tag(tag)
         if subtag:
             subtag = super().prepare_tag(subtag)
-            tag = f'{nodes.TMPL_PREFIX}{basetag}:{subtag}'
-        elif basetag == 'tmpl':
+            tag = nodes.unsplit_tag(basetag, subtag, skip_render)
+        elif basetag == 'tmpl' and not skip_render:
             return ''
         return super().prepare_tag(tag)
 

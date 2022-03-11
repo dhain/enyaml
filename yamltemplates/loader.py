@@ -58,14 +58,15 @@ class TemplateLoader(yaml.SafeLoader):
             event.tag = f'{nodes.TMPL_PREFIX}tmpl'
         elif not event.tag.startswith(nodes.TMPL_PREFIX):
             event.tag = f'{nodes.TMPL_PREFIX}tmpl:{event.tag}'
-        event.basetag, event.subtag = nodes.split_tag(event.tag)
+        event.basetag, event.subtag, event.skip_render = nodes.split_tag(event.tag)
         if event.subtag:
             m = TAG_RX.match(event.subtag)
             if m:
                 handle, suffix = m.groups()
                 if handle:
                     event.subtag = self.tag_handles[handle]+suffix
-                    event.tag = f'{nodes.TMPL_PREFIX}{event.basetag}:{event.subtag}'
+                    event.tag = nodes.unsplit_tag(
+                        event.basetag, event.subtag, event.skip_render)
         return event
 
     def compose_node(self, parent, index):
@@ -73,21 +74,15 @@ class TemplateLoader(yaml.SafeLoader):
         node = super().compose_node(parent, index)
         if not hasattr(event, 'basetag'):
             return node
-        tag = event.basetag
-        subtag = event.subtag
-        if tag.endswith('~'):
-            skip_render = True
-            tag = tag[:-1]
-        else:
-            skip_render = False
         for cls in type(node).__mro__:
             try:
-                node.__class__ = self.TMPL_MAP[tag, cls]
+                node.__class__ = self.TMPL_MAP[event.basetag, cls]
             except KeyError:
                 continue
             break
-        node.subtag = subtag
-        node.skip_render = skip_render
+        node.basetag = event.basetag
+        node.subtag = event.subtag
+        node.skip_render = event.skip_render
         return node
 
 

@@ -21,12 +21,25 @@ TMPL_PREFIX = 'tag:kubernaughties.com/tmpl,2022:'
 def split_tag(tag):
     if tag.startswith(TMPL_PREFIX):
         basetag, *subtag = tag[len(TMPL_PREFIX):].split(':', 1)
+        if basetag[-1] == '~':
+            basetag = basetag[:-1]
+            skip_render = True
+        else:
+            skip_render = False
         if subtag:
             subtag, = subtag
         else:
             subtag = None
-        return basetag, subtag
-    return None, None
+        return basetag, subtag, skip_render
+    return None, None, None
+
+
+def unsplit_tag(basetag, subtag, skip_render):
+    return ''.join((
+        TMPL_PREFIX, basetag,
+        '~' if skip_render else '',
+        ':', subtag
+    ))
 
 
 def maybe_render(node, loader, ctx):
