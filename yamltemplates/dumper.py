@@ -3,7 +3,37 @@ __all__ = [
 ]
 
 import yaml
+from . import nodes
 
 
 class TemplateDumper(yaml.SafeDumper):
-    pass
+    DEFAULT_TAG_PREFIXES = yaml.SafeDumper.DEFAULT_TAG_PREFIXES.copy()
+    DEFAULT_TAG_PREFIXES[nodes.TMPL_PREFIX] = '!'
+
+    def choose_scalar_style(self):
+        style = super().choose_scalar_style()
+        if (
+            self.event.tag.startswith(nodes.TMPL_PREFIX) and
+            not self.event.style and
+            (not (self.simple_key_context and
+                    (self.analysis.empty or self.analysis.multiline))
+                and (self.flow_level and self.analysis.allow_flow_plain
+                    or (not self.flow_level and self.analysis.allow_block_plain)))
+        ):
+            return ''
+        return style
+
+    def prepare_tag(self, tag):
+        basetag, subtag = nodes.split_tag(tag)
+        if subtag:
+            subtag = super().prepare_tag(subtag)
+            tag = f'{nodes.TMPL_PREFIX}{basetag}:{subtag}'
+        elif basetag == 'tmpl':
+            return ''
+        return super().prepare_tag(tag)
+
+
+for name in nodes.__all__:
+    obj = getattr(nodes, name)
+    if hasattr(obj, 'to_yaml'):
+        TemplateDumper.add_representer(obj, obj.to_yaml)
