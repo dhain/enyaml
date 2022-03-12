@@ -1,3 +1,7 @@
+# Copyright (c) 2022, Sadie Hain. All rights reserved.
+# Released under the BSD 3-Clause License
+# https://enyaml.org/LICENSE
+
 __all__ = [
     'TemplateLoader',
 ]
