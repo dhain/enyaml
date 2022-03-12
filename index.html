@@ -90,6 +90,22 @@
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </section>
+<section id="a-note-on-building-documentation">
+<h1>A Note On Building Documentation<a class="headerlink" href="#a-note-on-building-documentation" title="Permalink to this headline"></a></h1>
+<p>After cloning the ENYAML repository, and before you build documentation using
+<cite>make html</cite> from the <cite>docs/</cite> directory, it is recommended to add a git worktree
+for the <cite>gh-pages</cite> branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/dhain/enyaml.git
+$ cd enyaml
+$ git worktree add docs/build/html gh-pages
+$ cd docs
+$ make html
+$ cd build/html
+$ git status
+</pre></div>
+</div>
+<p>This way, the Sphinx output can be directly committed to the <cite>gh-pages</cite> branch.</p>
+</section>
 
 
            </div>
