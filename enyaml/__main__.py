@@ -15,7 +15,12 @@ parser.add_argument(
     '--outfile', '-o', type=argparse.FileType('w'), default=sys.stdout)
 
 
-if __name__ == '__main__':
+def main():
     opts = parser.parse_args()
     ctx = Context()
     dump_all(render_all(opts.infile, ctx), opts.outfile)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

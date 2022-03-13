@@ -17,3 +17,6 @@ doc = ["Sphinx", "sphinx-rtd-theme"]
 homepage = "https://enyaml.org"
 documentation = "https://enyaml.org"
 repository = "https://github.com/dhain/enyaml"
+
+[project.scripts]
+enyaml = "enyaml.__main__:main"
