@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ENYAML’s documentation! &mdash; ENYAML  documentation</title>
+  <title>ENYAML: Evaluation Notation YAML &mdash; ENYAML  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -16,9 +16,9 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API" href="api.html" /> 
+    <link rel="index" title="Index" href="genindex" />
+    <link rel="search" title="Search" href="search" />
+    <link rel="next" title="Usage" href="usage" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -29,7 +29,7 @@
             <a href="#" class="icon icon-home"> ENYAML
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -38,7 +38,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api">API</a></li>
 </ul>
 
         </div>
@@ -55,9 +56,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Welcome to ENYAML’s documentation!</li>
+      <li>ENYAML: Evaluation Notation YAML</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -65,18 +65,40 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-enyaml-s-documentation">
-<h1>Welcome to ENYAML’s documentation!<a class="headerlink" href="#welcome-to-enyaml-s-documentation" title="Permalink to this headline"></a></h1>
-<p><strong>ENYAML</strong> is Evaluation Notation YAML.</p>
+  <section id="enyaml-evaluation-notation-yaml">
+<h1>ENYAML: Evaluation Notation YAML<a class="headerlink" href="#enyaml-evaluation-notation-yaml" title="Permalink to this headline"></a></h1>
+<p>Basically, it’s a templating language for YAML documents.</p>
+<p>Here’s a simple example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="w"> </span><span class="nt">_</span><span class="p">:</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
+<span class="linenos">2</span><span class="w">   </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
+<span class="linenos">3</span><span class="w"> </span><span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;Hello,</span><span class="nv"> </span><span class="s">{name}!&quot;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>When rendered, the resulting YAML document would look like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="w"> </span><span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello, Guido!</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Traditional approaches to templating YAML, eg. jinja+yaml from the saltstack
+world, are just text-based templates that produce hopefully-valid YAML output.
+ENYAML’s approach is to use valid YAML as input, then rendering the resulting
+document structure, and finally either consuming the result as Python objects,
+or producing YAML output that is guaranteed to be valid.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/enyaml.html">enyaml</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/enyaml.loader.html">enyaml.loader</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/enyaml.dumper.html">enyaml.dumper</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/enyaml.nodes.html">enyaml.nodes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/enyaml.util.html">enyaml.util</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage#writing-a-simple-template">Writing a Simple Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage#rendering-a-template">Rendering a Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage#rendering-within-python">Rendering Within Python</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="enyaml">enyaml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enyaml.dumper">enyaml.dumper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enyaml.loader">enyaml.loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enyaml.nodes">enyaml.nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enyaml.util">enyaml.util</a></li>
 </ul>
 </li>
 </ul>
@@ -85,34 +107,17 @@
 <section id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<li><p><a class="reference internal" href="genindex"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</section>
-<section id="a-note-on-building-documentation">
-<h1>A Note On Building Documentation<a class="headerlink" href="#a-note-on-building-documentation" title="Permalink to this headline"></a></h1>
-<p>After cloning the ENYAML repository, and before you build documentation using
-<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> from the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory, it is recommended to add a git
-worktree for the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/dhain/enyaml.git
-$ cd enyaml
-$ git worktree add docs/build/html gh-pages
-$ cd docs
-$ make html
-$ cd build/html
-$ git status
-</pre></div>
-</div>
-<p>This way, the Sphinx output can be directly committed to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code>
-branch.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="api.html" class="btn btn-neutral float-right" title="API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="usage" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -1,0 +1,7 @@
+--- !set
+name: Guido
+greeting: Hello
+
+---
+foo: bar
+mygreeting: !$f "{greeting}, {name}!"
