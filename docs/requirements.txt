@@ -1,3 +1,3 @@
--e file:..#egg=enyaml
+-e file:.#egg=enyaml
 Sphinx>=4.4.0
 sphinx-rtd-theme
