@@ -84,13 +84,14 @@
 <h2>Writing a Simple Template<a class="headerlink" href="#writing-a-simple-template" title="Permalink to this headline"></a></h2>
 <p>Here is a simple example template. Save this file to <code class="docutils literal notranslate"><span class="pre">helloworld.yaml</span></code> to run
 the example code below.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="nn">---</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
-<span class="linenos">2</span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
-<span class="linenos">3</span><span class="nt">greeting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello</span><span class="w"></span>
-<span class="linenos">4</span>
-<span class="linenos">5</span><span class="nn">---</span><span class="w"></span>
-<span class="linenos">6</span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span><span class="w"></span>
-<span class="linenos">7</span><span class="nt">mygreeting</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;{greeting},</span><span class="nv"> </span><span class="s">{name}!&quot;</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="nn">---</span><span class="w"></span>
+<span class="linenos">2</span><span class="kt">!set</span><span class="w"></span>
+<span class="linenos">3</span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
+<span class="linenos">4</span><span class="nt">greeting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello</span><span class="w"></span>
+<span class="linenos">5</span>
+<span class="linenos">6</span><span class="nn">---</span><span class="w"></span>
+<span class="linenos">7</span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span><span class="w"></span>
+<span class="linenos">8</span><span class="nt">mygreeting</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;{greeting},</span><span class="nv"> </span><span class="s">{name}!&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
