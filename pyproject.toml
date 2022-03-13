@@ -11,7 +11,7 @@ dynamic = ["version", "description"]
 dependencies = ["PyYAML"]
 
 [project.optional-dependencies]
-doc = ["Sphinx", "sphinx-rtd-theme"]
+doc = ["Sphinx>=4.4.0", "sphinx-rtd-theme"]
 
 [project.urls]
 homepage = "https://enyaml.org"
