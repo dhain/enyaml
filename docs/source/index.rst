@@ -31,6 +31,7 @@ or producing YAML output that is guaranteed to be valid.
 
    usage
    api
+   LICENSE
 
 
 Indices and tables
