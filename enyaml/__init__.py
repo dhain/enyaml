@@ -2,6 +2,10 @@
 # Released under the BSD 3-Clause License
 # https://enyaml.org/LICENSE
 
+"""ENYAML is Evaluation Notation YAML.
+"""
+__version__ = '0.1'
+
 import yaml
 from functools import partial
 from .util import *
@@ -36,6 +40,12 @@ add_multi_representer = partial(yaml.add_multi_representer, Dumper=TemplateDumpe
 
 
 def render(stream, ctx, Loader=TemplateLoader):
+    """Load and render a single-document template.
+
+    :param file stream: The stream to read the template from.
+    :param Context ctx: A Context instance.
+    :return: The rendered data.
+    """
     loader = Loader(stream)
     try:
         return loader.render_single_data(ctx)
@@ -44,6 +54,12 @@ def render(stream, ctx, Loader=TemplateLoader):
 
 
 def render_all(stream, ctx, Loader=TemplateLoader):
+    """Load and render a stream of template documents.
+
+    :param file stream: The stream to read the templates from.
+    :param Context ctx: A Context instance.
+    :return: An iterable containing rendered data.
+    """
     loader = Loader(stream)
     try:
         while loader.check_data():

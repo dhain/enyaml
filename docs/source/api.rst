@@ -2,10 +2,11 @@ API
 ===
 
 .. autosummary::
-   :toctree: generated
+   :toctree:
+   :recursive:
 
    enyaml
-   enyaml.loader
    enyaml.dumper
+   enyaml.loader
    enyaml.nodes
    enyaml.util
