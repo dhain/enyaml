@@ -33,26 +33,24 @@ class TemplateLoader(yaml.SafeLoader):
                 return node
 
     def render_data(self, ctx):
-        """Renders all documents in the stream.
+        """Renders the next document in the stream.
 
         :param Context ctx: The Context with which to render.
-        :return: Iterable of rendered documents.
-
-        Only documents which produce output when rendered will be included in
-        the result.
+        :return: Rendered result.
         """
         node = self._render_next_node(ctx)
         if node:
             return self.construct_document(node)
 
     def render_single_data(self, ctx):
-        """Renders a single document in the stream.
+        """Renders a single document stream.
 
         :param Context ctx: The Context with which to render.
-        :return: Iterable of rendered documents.
+        :return: Rendered result.
         :raises yaml.composer.ComposerError: when there are more than one
-           document which produce output when rendered, or the document which
-           produces output is not the last document in the stream.
+           document in the stream which produce output when rendered, or the
+           document which produces output is not the last document in the
+           stream.
         """
         node = self._render_next_node(ctx)
         if self.check_node():
@@ -63,6 +61,24 @@ class TemplateLoader(yaml.SafeLoader):
             )
         if node:
             return self.construct_document(node)
+
+    def _strip_tmpl_tags(self, node):
+        if hasattr(node, 'subtag'):
+            node.tag = node.subtag or self.resolve(
+                node.node_type, node.value, (True, False))
+
+    def get_data(self):
+        if self.check_node():
+            node = self.get_node()
+            self._strip_tmpl_tags(node)
+            return self.construct_document(node)
+
+    def get_single_data(self):
+        node = self.get_single_node()
+        if node is not None:
+            self._strip_tmpl_tags(node)
+            return self.construct_document(node)
+        return None
 
     def construct_object(self, node, deep=False):
         if getattr(node, 'skip_render', False):

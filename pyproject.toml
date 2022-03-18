@@ -11,6 +11,7 @@ dynamic = ["version", "description"]
 dependencies = ["PyYAML"]
 
 [project.optional-dependencies]
+test = ["pytest"]
 doc = ["Sphinx>=4.4.0", "sphinx-rtd-theme"]
 
 [project.urls]

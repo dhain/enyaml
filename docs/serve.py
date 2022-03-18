@@ -10,7 +10,7 @@ SCRIPTDIR = os.path.abspath(os.path.dirname(__file__))
 BUILDDIR = os.path.join(SCRIPTDIR, 'build')
 WATCH_DIRS = ' '.join(shlex.quote(i) for i in [
     SCRIPTDIR,
-    os.path.abspath(os.path.join(SCRIPTDIR, '..', 'enyaml')),
+    os.path.abspath(os.path.join(SCRIPTDIR, '..', 'src', 'enyaml')),
 ])
 EXCLUDES = ' '.join(f'-e {shlex.quote(i)}' for i in [
     f'^{re.escape(BUILDDIR)}',

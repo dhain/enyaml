@@ -1,0 +1,17 @@
+!set
+var1: foo
+var2: 1
+var3:
+  - 1
+  - 2
+
+--- !$f 'foo {var1}' #'
+--- !$f 'one {var2} two' #'
+--- !$f 'list {var3}' #'
+
+---
+vvv
+
+--- foo foo
+--- one 1 two
+--- 'list [1, 2]'
