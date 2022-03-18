@@ -1,9 +1,24 @@
 #!python3
 import os
+import re
+import shlex
 import http.server
 import socketserver
+import subprocess
 
-DIRECTORY = 'build/html'
+SCRIPTDIR = os.path.abspath(os.path.dirname(__file__))
+BUILDDIR = os.path.join(SCRIPTDIR, 'build')
+WATCH_DIRS = ' '.join(shlex.quote(i) for i in [
+    SCRIPTDIR,
+    os.path.abspath(os.path.join(SCRIPTDIR, '..', 'enyaml')),
+])
+EXCLUDES = ' '.join(f'-e {shlex.quote(i)}' for i in [
+    f'^{re.escape(BUILDDIR)}',
+    r'__pycache__',
+])
+WATCH_COMMAND = \
+    f'fswatch -orE {EXCLUDES} {WATCH_DIRS} | xargs -n1 -I{{}} make html doctest'
+
 
 class DocRequestHandler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {
@@ -12,9 +27,9 @@ class DocRequestHandler(http.server.SimpleHTTPRequestHandler):
         '.html': 'text/html',
         '.png': 'image/png',
         '.jpg': 'image/jpg',
-        '.svg':	'image/svg+xml',
-        '.css':	'text/css',
-        '.js':'application/x-javascript',
+        '.svg': 'image/svg+xml',
+        '.css': 'text/css',
+        '.js': 'application/x-javascript',
         '.wasm': 'application/wasm',
         '.json': 'application/json',
         '.xml': 'application/xml',
@@ -22,7 +37,7 @@ class DocRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def __init__(self, *args, directory=None, **kwargs):
         if directory is None:
-            directory = DIRECTORY
+            directory = os.path.join(BUILDDIR, 'html')
         super().__init__(*args, directory=directory, **kwargs)
 
     def translate_path(self, path):
@@ -37,4 +52,10 @@ class DocRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    http.server.test(HandlerClass=DocRequestHandler, port=8080)
+    print(WATCH_COMMAND)
+    watcher = subprocess.Popen(WATCH_COMMAND, shell=True)
+    try:
+        http.server.test(HandlerClass=DocRequestHandler, port=8080)
+    finally:
+        watcher.terminate()
+        watcher.wait()

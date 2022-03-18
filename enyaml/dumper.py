@@ -11,6 +11,7 @@ from . import nodes
 
 
 class TemplateDumper(yaml.SafeDumper):
+    """Dumps un-rendered ENYAML templates."""
     DEFAULT_TAG_PREFIXES = yaml.SafeDumper.DEFAULT_TAG_PREFIXES.copy()
     DEFAULT_TAG_PREFIXES[nodes.TAG_PREFIX] = '!'
 

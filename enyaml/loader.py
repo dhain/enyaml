@@ -16,6 +16,10 @@ TAG_RX = re.compile(r'(!(?:[0-9a-zA-Z-_]*!)?)?(.*)$')
 
 
 class TemplateLoader(yaml.SafeLoader):
+    """Loads and renders ENYAML templates.
+
+    :param file-like stream: The stream to read the templates from.
+    """
     TAG_MAP = {}
     DEFAULT_TAGS = yaml.SafeLoader.DEFAULT_TAGS.copy()
     DEFAULT_TAGS['!'] = nodes.TAG_PREFIX
@@ -29,16 +33,32 @@ class TemplateLoader(yaml.SafeLoader):
                 return node
 
     def render_data(self, ctx):
+        """Renders all documents in the stream.
+
+        :param Context ctx: The Context with which to render.
+        :return: Iterable of rendered documents.
+
+        Only documents which produce output when rendered will be included in
+        the result.
+        """
         node = self._render_next_node(ctx)
         if node:
             return self.construct_document(node)
 
     def render_single_data(self, ctx):
+        """Renders a single document in the stream.
+
+        :param Context ctx: The Context with which to render.
+        :return: Iterable of rendered documents.
+        :raises yaml.composer.ComposerError: when there are more than one
+           document which produce output when rendered, or the document which
+           produces output is not the last document in the stream.
+        """
         node = self._render_next_node(ctx)
         if self.check_node():
             event = self.get_event()
             raise ComposerError(
-                'expected a single document', node.start_mark,
+                'expected a single document in the stream', node.start_mark,
                 'but found another document', event.start_mark
             )
         if node:

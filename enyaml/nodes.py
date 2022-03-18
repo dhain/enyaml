@@ -3,7 +3,9 @@
 # https://enyaml.org/LICENSE
 
 __all__ = [
+    'BaseTemplateNode',
     'ScalarTemplateNode',
+    'BaseCollectionTemplateNode',
     'SequenceTemplateNode',
     'MappingTemplateNode',
     'SetterNode',
@@ -146,6 +148,43 @@ class MappingTemplateNode(BaseCollectionTemplateNode, yaml.MappingNode):
 
 
 class SetterNode(MappingTemplateNode):
+    """Represents a ``!set`` node.
+
+    When rendered, updates the Context with the result. ``!set`` nodes are
+    removed from rendered documents.
+
+    Here's an example document:
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       foo: 1
+       bar: 1
+
+       ---
+       output1: !$ foo
+       thisgetsremoved: !set
+         quux: 1
+         qat: !$ foo
+       output2: !$ quux
+       output3: !$ qat
+
+    When rendered, the following document will be produced:
+
+    .. code-block:: yaml
+
+       output1: 1
+       output2: 1
+       output3: 1
+
+    The Context will equal:
+
+    .. code-block::
+
+       {'foo': 1, 'bar': 1, 'quux': 1, 'qat': 1}
+    """
+
     basetag = 'set'
 
     def render(self, loader, ctx):
@@ -161,6 +200,35 @@ class SetterNode(MappingTemplateNode):
 
 
 class ExpressionNode(ScalarTemplateNode):
+    """Represents a ``!$`` node.
+
+    When rendered, is replaced by the result of the expression. Examples:
+
+    .. code-block:: yaml
+
+       thisequalsone: !$ 1
+       thisequalstwo: !$ 1 + 1
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       foo: 1
+
+       ---
+       thisequalsone: !$ foo
+       thisequalstwo: !$ foo + 1
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       foo:
+         bar: hello
+
+       ---
+       thisequalsHELLO: !$ "foo['bar'].upper()"
+    """
     basetag = '$'
 
     def render(self, loader, ctx):
@@ -174,6 +242,26 @@ class ExpressionNode(ScalarTemplateNode):
 
 
 class FormatStringNode(ScalarTemplateNode):
+    """Represents a ``!$f`` node.
+
+    When rendered, is replaced by the result of the format-string. Example:
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       title: Mr.
+       name: Guido
+
+       ---
+       greeting: !$f 'Hello, {title} {name}!'
+
+    The rendered output:
+
+    .. code-block:: yaml
+
+       greeting: Hello, Mr. Guido!
+    """
     basetag = '$f'
 
     def render(self, loader, ctx):
@@ -184,6 +272,25 @@ class FormatStringNode(ScalarTemplateNode):
 
 
 class IfNode(SequenceTemplateNode):
+    """Represents an ``!if`` node.
+
+    When rendered, is replaced by the first matching node. If no nodes match,
+    but a default is provided, then will be replaced by the default node. If no
+    default is provided, then node will not appear in output.  Examples:
+
+    .. code-block:: yaml
+
+       thisisbar: !if [
+         false, foo,
+         true, bar
+       ]
+       thisisdefault: !if [
+         false, foo,
+         false, bar,
+         default
+       ]
+       thisisomitted: !if [false, foo]
+    """
     basetag = 'if'
 
     def render(self, loader, ctx):
@@ -244,12 +351,90 @@ class BaseForNode(BaseTemplateNode):
 
 
 class SequenceForNode(BaseForNode, SequenceTemplateNode):
+    """Represents a ``!for`` node with sequence value, AKA list comprehension.
+
+    When rendered, constructs a sequence containing matching values from the
+    input sequence. Syntactically, this is a single-element sequence whose sole
+    item is a parameter mapping. The parameter mapping consists of the following:
+
+    .. code-block:: yaml
+
+       <sequence>: <list of names>
+       ret: <result template>
+       if: <condition> (optional)
+
+    The *result template* and *condition* are evaluated for each item in the
+    input sequence, assigning the item to the name(s) specified in a special
+    Context scope. If the *condition* evaluates as true, then the resulting
+    sequence will include the (rendered) result template. For example:
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       myseq:
+       - item 1
+       - OMITTED
+       - item 2
+
+       ---
+       !for [{
+         !$ myseq: i,
+         ret: !$f "This is {i}",
+         if: !$ "i != 'OMITTED'"
+       }]
+
+    would result in:
+
+    .. code-block:: yaml
+
+       - This is item 1
+       - This is item 2
+    """
     def _value(self):
         value, = self.value
         return value.value
 
 
 class MappingForNode(BaseForNode, MappingTemplateNode):
+    """Represents a ``!for`` node with mapping value, AKA dict comprehension.
+
+    When rendered, constructs a mapping containing matching values from the
+    input sequence. Syntactically, this is a parameter mapping. The parameter
+    mapping consists of the following:
+
+    .. code-block:: yaml
+
+       <sequence>: <list of names>
+       ret: <result template>
+       if: <condition> (optional)
+
+    The *result template* and *condition* are evaluated for each item in the
+    input sequence, assigning the item to the name(s) specified in a special
+    Context scope. If the *condition* evaluates as true, then the resulting
+    mapping will be merged with the (rendered) result template. For example:
+
+    .. code-block:: yaml
+
+       ---
+       !set
+       people:
+       - Alice
+       - Bob
+
+       ---
+       !for
+       !$ people: name
+       ret:
+         !$ name: 1
+
+    would result in:
+
+    .. code-block:: yaml
+
+       Alice: 1
+       Bob: 1
+    """
     def _value(self):
         return self.value
 

@@ -38,6 +38,7 @@ extensions = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
+    'yaml': ('https://pyyaml.org/wiki/', 'pyyaml-inv.txt'),
 }
 intersphinx_disabled_domains = ['std']
 
@@ -48,6 +49,9 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+
+add_module_names = False
+autodoc_member_order = 'bysource'
 
 
 # -- Options for HTML output -------------------------------------------------
