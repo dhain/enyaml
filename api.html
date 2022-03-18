@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex" />
     <link rel="search" title="Search" href="search" />
-    <link rel="next" title="enyaml" href="enyaml" />
-    <link rel="prev" title="Usage" href="usage" /> 
+    <link rel="next" title="License" href="LICENSE" />
+    <link rel="prev" title="Template Syntax" href="syntax" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,13 +39,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="enyaml">enyaml</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.dumper">enyaml.dumper</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.loader">enyaml.loader</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.nodes">enyaml.nodes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.util">enyaml.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-enyaml">High-Level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-enyaml.util">Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-enyaml.loader">Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-enyaml.dumper">Dumper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-enyaml.nodes">Node Representation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="LICENSE">License</a></li>
@@ -76,37 +77,404 @@
              
   <section id="api">
 <h1>API<a class="headerlink" href="#api" title="Permalink to this headline"></a></h1>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="enyaml#module-enyaml" title="enyaml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enyaml</span></code></a></p></td>
-<td><p>ENYAML is Evaluation Notation YAML.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="enyaml.dumper#module-enyaml.dumper" title="enyaml.dumper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enyaml.dumper</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="enyaml.loader#module-enyaml.loader" title="enyaml.loader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enyaml.loader</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="enyaml.nodes#module-enyaml.nodes" title="enyaml.nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enyaml.nodes</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="enyaml.util#module-enyaml.util" title="enyaml.util"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enyaml.util</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
+<p>ENYAML is Evaluation Notation YAML.</p>
+<p>It is implemented on top of the PyYAML module, using the
+<a class="reference internal" href="#enyaml.loader.TemplateLoader" title="enyaml.loader.TemplateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLoader</span></code></a> and <a class="reference internal" href="#enyaml.dumper.TemplateDumper" title="enyaml.dumper.TemplateDumper"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateDumper</span></code></a> classes, and a handful of
+<a class="reference internal" href="#module-enyaml.nodes" title="enyaml.nodes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Node</span></code></a> subclasses.</p>
+<div class="contents local topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#module-enyaml" id="id1">High-Level API</a></p></li>
+<li><p><a class="reference internal" href="#module-enyaml.util" id="id2">Context</a></p></li>
+<li><p><a class="reference internal" href="#module-enyaml.loader" id="id3">Loader</a></p></li>
+<li><p><a class="reference internal" href="#module-enyaml.dumper" id="id4">Dumper</a></p></li>
+<li><p><a class="reference internal" href="#module-enyaml.nodes" id="id5">Node Representation</a></p></li>
+</ul>
+</div>
+<section id="module-enyaml">
+<span id="high-level-api"></span><h2>High-Level API<a class="headerlink" href="#module-enyaml" title="Permalink to this headline"></a></h2>
+<p>The ENYAML high-level API is the same as that of the <a class="reference external" href="https://pyyaml.org/wiki/PyYAMLDocumentation#reference" title="(in PyYAML v5.3.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">yaml</span></code></a> module. The
+top-level functions are wrappers around the functions from that module, which
+pass <a class="reference internal" href="#enyaml.loader.TemplateLoader" title="enyaml.loader.TemplateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLoader</span></code></a> and <a class="reference internal" href="#enyaml.dumper.TemplateDumper" title="enyaml.dumper.TemplateDumper"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateDumper</span></code></a> as the default
+<code class="docutils literal notranslate"><span class="pre">Loader</span></code> and <code class="docutils literal notranslate"><span class="pre">Dumper</span></code> arguments. A subclass of <a class="reference external" href="https://pyyaml.org/wiki/PyYAMLDocumentation#yamlobject" title="(in PyYAML v5.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaml.YAMLObject</span></code></a> is
+also provided for convenience.</p>
+<p>Additionally, two new high-level functions are provided for rendering ENYAML
+templates.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="enyaml.render">
+<span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Loader=&lt;class</span> <span class="pre">'enyaml.loader.TemplateLoader'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.render" title="Permalink to this definition"></a></dt>
+<dd><p>Load and render a single-document template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<em>file-like</em>) – The stream to read the template from.</p></li>
+<li><p><strong>ctx</strong> (<a class="reference internal" href="#enyaml.util.Context" title="enyaml.util.Context"><em>Context</em></a>) – A Context instance.</p></li>
+<li><p><strong>Loader</strong> – The loader class to instantiate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The rendered data.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The input YAML can have multiple documents, as long as only the last one
+produces output when rendered. For example, the following counts as a
+single-document template:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">greeting</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;Hello,</span><span class="nv"> </span><span class="s">{name}&quot;</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enyaml.render_all">
+<span class="sig-name descname"><span class="pre">render_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Loader=&lt;class</span> <span class="pre">'enyaml.loader.TemplateLoader'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.render_all" title="Permalink to this definition"></a></dt>
+<dd><p>Load and render a stream of template documents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<em>file-like</em>) – The stream to read the templates from.</p></li>
+<li><p><strong>ctx</strong> (<a class="reference internal" href="#enyaml.util.Context" title="enyaml.util.Context"><em>Context</em></a>) – A Context instance.</p></li>
+<li><p><strong>Loader</strong> – The loader class to instantiate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An iterable containing rendered data.</p>
+</dd>
+</dl>
+<p>Only documents which produce output when rendered will be included in the
+result.</p>
+</dd></dl>
+
+</section>
+<section id="module-enyaml.util">
+<span id="context"></span><h2>Context<a class="headerlink" href="#module-enyaml.util" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.util.Context">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">maps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.util.Context" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.ChainMap" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.ChainMap</span></code></a></p>
+<p>Context objects behave like a <a class="reference external" href="https://docs.python.org/3/glossary.html#term-mapping" title="(in Python v3.10)"><span class="xref std std-term">mapping</span></a>, with the added benefit of
+multiple “levels” of scope. Modifications to the Context at a given scope
+will be discarded when the scope is exited. For example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">c</span><span class="o">.</span><span class="n">push</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">c</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">... </span>    <span class="n">c</span><span class="p">[</span><span class="s1">&#39;bar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="gp">... </span>    <span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 2, &#39;bar&#39;: 3}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 1}</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="enyaml.util.Context.push">
+<span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.util.Context.push" title="Permalink to this definition"></a></dt>
+<dd><p>Push a <a class="reference external" href="https://docs.python.org/3/glossary.html#term-mapping" title="(in Python v3.10)"><span class="xref std std-term">mapping</span></a> onto the Context as a new scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dct</strong> (<em>mapping</em><em>, </em><em>optional</em>) – A <a class="reference external" href="https://docs.python.org/3/glossary.html#term-mapping" title="(in Python v3.10)"><span class="xref std std-term">mapping</span></a> object to push onto the
+Context. If not specified or <code class="xref py py-const docutils literal notranslate"><span class="pre">None</span></code>, a new <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> will
+be created.</p></li>
+<li><p><strong>pos</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>, </em><em>optional</em>) – The position in the stack to insert the
+mapping. The inner-most scope is <code class="xref py py-const docutils literal notranslate"><span class="pre">0</span></code>, which is the default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A context manager which will remove the scope from the
+Context upon exit.</p>
+</dd>
+</dl>
+<p>Examples:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">c</span><span class="o">.</span><span class="n">push</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">c</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">... </span>    <span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 2}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 1}</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">c</span><span class="o">.</span><span class="n">push</span><span class="p">({</span><span class="s1">&#39;bar&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}):</span>
+<span class="gp">... </span>    <span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 1, &#39;bar&#39;: 1}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 1}</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">c</span><span class="o">.</span><span class="n">push</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">with</span> <span class="n">c</span><span class="o">.</span><span class="n">push</span><span class="p">({</span><span class="s1">&#39;baz&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="mi">1</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="n">c</span><span class="p">[</span><span class="s1">&#39;bar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;baz&#39;</span><span class="p">]</span>
+<span class="gp">... </span>    <span class="nb">dict</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">{&#39;foo&#39;: 1, &#39;bar&#39;: 1}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-enyaml.loader">
+<span id="loader"></span><h2>Loader<a class="headerlink" href="#module-enyaml.loader" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.loader.TemplateLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TemplateLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.loader.TemplateLoader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pyyaml.org/wiki/PyYAMLDocumentation#loader" title="(in PyYAML v5.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaml.loader.SafeLoader</span></code></a></p>
+<p>Loads and renders ENYAML templates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stream</strong> (<em>file-like</em>) – The stream to read the templates from.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="enyaml.loader.TemplateLoader.render_data">
+<span class="sig-name descname"><span class="pre">render_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.loader.TemplateLoader.render_data" title="Permalink to this definition"></a></dt>
+<dd><p>Renders all documents in the stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ctx</strong> (<a class="reference internal" href="#enyaml.util.Context" title="enyaml.util.Context"><em>Context</em></a>) – The Context with which to render.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Iterable of rendered documents.</p>
+</dd>
+</dl>
+<p>Only documents which produce output when rendered will be included in
+the result.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enyaml.loader.TemplateLoader.render_single_data">
+<span class="sig-name descname"><span class="pre">render_single_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.loader.TemplateLoader.render_single_data" title="Permalink to this definition"></a></dt>
+<dd><p>Renders a single document in the stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ctx</strong> (<a class="reference internal" href="#enyaml.util.Context" title="enyaml.util.Context"><em>Context</em></a>) – The Context with which to render.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Iterable of rendered documents.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>yaml.composer.ComposerError</strong> – when there are more than one
+document which produce output when rendered, or the document which
+produces output is not the last document in the stream.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-enyaml.dumper">
+<span id="dumper"></span><h2>Dumper<a class="headerlink" href="#module-enyaml.dumper" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.dumper.TemplateDumper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TemplateDumper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_flow_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_unicode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_break</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explicit_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explicit_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.dumper.TemplateDumper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pyyaml.org/wiki/PyYAMLDocumentation#dumper" title="(in PyYAML v5.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaml.dumper.SafeDumper</span></code></a></p>
+<p>Dumps un-rendered ENYAML templates.</p>
+</dd></dl>
+
+</section>
+<section id="module-enyaml.nodes">
+<span id="node-representation"></span><h2>Node Representation<a class="headerlink" href="#module-enyaml.nodes" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.SetterNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SetterNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.SetterNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.MappingTemplateNode</span></code></p>
+<p>Represents a <code class="docutils literal notranslate"><span class="pre">!set</span></code> node.</p>
+<p>When rendered, updates the Context with the result. <code class="docutils literal notranslate"><span class="pre">!set</span></code> nodes are
+removed from rendered documents.</p>
+<p>Here’s an example document:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="nt">bar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">output1</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+<span class="nt">thisgetsremoved</span><span class="p">:</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
+<span class="w">  </span><span class="nt">quux</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="w">  </span><span class="nt">qat</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+<span class="nt">output2</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quux</span><span class="w"></span>
+<span class="nt">output3</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qat</span><span class="w"></span>
+</pre></div>
+</div>
+<p>When rendered, the following document will be produced:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">output1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="nt">output2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="nt">output3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The Context will equal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;quux&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;qat&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.ExpressionNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExpressionNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.ExpressionNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.ScalarTemplateNode</span></code></p>
+<p>Represents a <code class="docutils literal notranslate"><span class="pre">!$</span></code> node.</p>
+<p>When rendered, is replaced by the result of the expression. Examples:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thisequalsone</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="nt">thisequalstwo</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1 + 1</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">thisequalsone</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+<span class="nt">thisequalstwo</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo + 1</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">foo</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">bar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">thisequalsHELLO</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="s">&quot;foo[&#39;bar&#39;].upper()&quot;</span><span class="w"></span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.FormatStringNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FormatStringNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.FormatStringNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.ScalarTemplateNode</span></code></p>
+<p>Represents a <code class="docutils literal notranslate"><span class="pre">!$f</span></code> node.</p>
+<p>When rendered, is replaced by the result of the format-string. Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mr.</span><span class="w"></span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">greeting</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&#39;Hello,</span><span class="nv"> </span><span class="s">{title}</span><span class="nv"> </span><span class="s">{name}!&#39;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The rendered output:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">greeting</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello, Mr. Guido!</span><span class="w"></span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.IfNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IfNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.IfNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.SequenceTemplateNode</span></code></p>
+<p>Represents an <code class="docutils literal notranslate"><span class="pre">!if</span></code> node.</p>
+<p>When rendered, is replaced by the first matching node. If no nodes match,
+but a default is provided, then will be replaced by the default node. If no
+default is provided, then node will not appear in output.  Examples:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thisisbar</span><span class="p">:</span><span class="w"> </span><span class="kt">!if</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
+<span class="w">  </span><span class="nv">false</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">foo</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="w">  </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">bar</span><span class="w"></span>
+<span class="p p-Indicator">]</span><span class="w"></span>
+<span class="nt">thisisdefault</span><span class="p">:</span><span class="w"> </span><span class="kt">!if</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
+<span class="w">  </span><span class="nv">false</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">foo</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="w">  </span><span class="nv">false</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">bar</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="w">  </span><span class="nv">default</span><span class="w"></span>
+<span class="p p-Indicator">]</span><span class="w"></span>
+<span class="nt">thisisomitted</span><span class="p">:</span><span class="w"> </span><span class="kt">!if</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">false</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">foo</span><span class="p p-Indicator">]</span><span class="w"></span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.SequenceForNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SequenceForNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.SequenceForNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.BaseForNode</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.SequenceTemplateNode</span></code></p>
+<p>Represents a <code class="docutils literal notranslate"><span class="pre">!for</span></code> node with sequence value, AKA list comprehension.</p>
+<p>When rendered, constructs a sequence containing matching values from the
+input sequence. Syntactically, this is a single-element sequence whose sole
+item is a parameter mapping. The parameter mapping consists of the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;sequence&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;list of names&gt;</span><span class="w"></span>
+<span class="nt">ret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;result template&gt;</span><span class="w"></span>
+<span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;condition&gt; (optional)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The <em>result template</em> and <em>condition</em> are evaluated for each item in the
+input sequence, assigning the item to the name(s) specified in a special
+Context scope. If the <em>condition</em> evaluates as true, then the resulting
+sequence will include the (rendered) result template. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">myseq</span><span class="p">:</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">item 1</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OMITTED</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">item 2</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="kt">!for</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="w"></span>
+<span class="nt">  !$ myseq</span><span class="p">:</span><span class="w"> </span><span class="nv">i</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="nt">  ret</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;This</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{i}&quot;</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="nt">  if</span><span class="p">:</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="s">&quot;i</span><span class="nv"> </span><span class="s">!=</span><span class="nv"> </span><span class="s">&#39;OMITTED&#39;&quot;</span><span class="w"></span>
+<span class="p p-Indicator">}]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>would result in:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">This is item 1</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">This is item 2</span><span class="w"></span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enyaml.nodes.MappingForNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MappingForNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_mark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_render</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enyaml.nodes.MappingForNode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.BaseForNode</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enyaml.nodes.MappingTemplateNode</span></code></p>
+<p>Represents a <code class="docutils literal notranslate"><span class="pre">!for</span></code> node with mapping value, AKA dict comprehension.</p>
+<p>When rendered, constructs a mapping containing matching values from the
+input sequence. Syntactically, this is a parameter mapping. The parameter
+mapping consists of the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;sequence&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;list of names&gt;</span><span class="w"></span>
+<span class="nt">ret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;result template&gt;</span><span class="w"></span>
+<span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;condition&gt; (optional)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The <em>result template</em> and <em>condition</em> are evaluated for each item in the
+input sequence, assigning the item to the name(s) specified in a special
+Context scope. If the <em>condition</em> evaluates as true, then the resulting
+mapping will be merged with the (rendered) result template. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">people</span><span class="p">:</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Alice</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bob</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="kt">!for</span><span class="w"></span>
+<span class="nt">!$ people</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="w"></span>
+<span class="nt">ret</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">!$ name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+</pre></div>
+</div>
+<p>would result in:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Alice</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="nt">Bob</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="usage" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="enyaml" class="btn btn-neutral float-right" title="enyaml" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="syntax" class="btn btn-neutral float-left" title="Template Syntax" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LICENSE" class="btn btn-neutral float-right" title="License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

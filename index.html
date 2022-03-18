@@ -18,7 +18,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex" />
     <link rel="search" title="Search" href="search" />
-    <link rel="next" title="Usage" href="usage" /> 
+    <link rel="next" title="Getting Started" href="getting-started" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -38,7 +38,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="LICENSE">License</a></li>
 </ul>
@@ -80,26 +81,27 @@
 </pre></div>
 </div>
 <p>Traditional approaches to templating YAML, eg. jinja+yaml from the saltstack
-world, are just text-based templates that produce hopefully-valid YAML output.
-ENYAML’s approach is to use valid YAML as input, then rendering the resulting
-document structure, and finally either consuming the result as Python objects,
-or producing YAML output that is guaranteed to be valid.</p>
+world, are just text-based templates that produce (hopefully valid) YAML
+output.  ENYAML’s approach is to use valid YAML as input, then render the
+document structure directly as native objects. You can then consume the data
+directly, or dump it back out to YAML, which is guaranteed to be valid.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="usage">Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="usage#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage#writing-a-simple-template">Writing a Simple Template</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage#rendering-a-template">Rendering a Template</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage#rendering-within-python">Rendering Within Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting-started#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started#writing-a-simple-template">Writing a Simple Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started#rendering-a-template">Rendering a Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started#rendering-within-python">Rendering Within Python</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="enyaml">enyaml</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.dumper">enyaml.dumper</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.loader">enyaml.loader</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.nodes">enyaml.nodes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enyaml.util">enyaml.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api#module-enyaml">High-Level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api#module-enyaml.util">Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api#module-enyaml.loader">Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api#module-enyaml.dumper">Dumper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api#module-enyaml.nodes">Node Representation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="LICENSE">License</a></li>
@@ -119,7 +121,7 @@ or producing YAML output that is guaranteed to be valid.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="usage" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="getting-started" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
