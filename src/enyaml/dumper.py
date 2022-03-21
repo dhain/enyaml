@@ -19,11 +19,19 @@ class TemplateDumper(yaml.SafeDumper):
         style = super().choose_scalar_style()
         if (
             self.event.tag.startswith(nodes.TAG_PREFIX) and
-            not self.event.style and
-            (not (self.simple_key_context and
-                    (self.analysis.empty or self.analysis.multiline))
-                and (self.flow_level and self.analysis.allow_flow_plain
-                    or (not self.flow_level and self.analysis.allow_block_plain)))
+            not self.event.style and (
+                not (
+                    self.simple_key_context
+                    and (self.analysis.empty or self.analysis.multiline)
+                )
+                and (
+                    self.flow_level
+                    and self.analysis.allow_flow_plain
+                    or (
+                        not self.flow_level
+                        and self.analysis.allow_block_plain
+                    )
+                ))
         ):
             return ''
         return style

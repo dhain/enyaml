@@ -17,13 +17,13 @@ __version__ = '0.1'
 
 import yaml
 from functools import partial
-from .util import *
-from .nodes import *
-from .loader import *
-from .dumper import *
+from .util import *     # noqa: F403
+from .nodes import *    # noqa: F403
+from .loader import *   # noqa: F403
+from .dumper import *   # noqa: F403
 
 
-def render(stream, ctx, Loader=TemplateLoader):
+def render(stream, ctx, Loader=TemplateLoader):  # noqa: F405
     """Load and render a single-document template.
 
     :param file-like stream: The stream to read the template from.
@@ -52,7 +52,7 @@ def render(stream, ctx, Loader=TemplateLoader):
         loader.dispose()
 
 
-def render_all(stream, ctx, Loader=TemplateLoader):
+def render_all(stream, ctx, Loader=TemplateLoader):  # noqa: F405
     """Load and render a stream of template documents.
 
     :param file-like stream: The stream to read the templates from.
@@ -71,32 +71,41 @@ def render_all(stream, ctx, Loader=TemplateLoader):
         loader.dispose()
 
 
-load = partial(yaml.load, Loader=TemplateLoader)
-load_all = partial(yaml.load_all, Loader=TemplateLoader)
-scan = partial(yaml.scan, Loader=TemplateLoader)
-parse = partial(yaml.parse, Loader=TemplateLoader)
-compose = partial(yaml.compose, Loader=TemplateLoader)
+load = partial(yaml.load, Loader=TemplateLoader)  # noqa: F405
+load_all = partial(yaml.load_all, Loader=TemplateLoader)  # noqa: F405
+scan = partial(yaml.scan, Loader=TemplateLoader)  # noqa: F405
+parse = partial(yaml.parse, Loader=TemplateLoader)  # noqa: F405
+compose = partial(yaml.compose, Loader=TemplateLoader)  # noqa: F405
 
-compose_all = partial(yaml.compose_all, Loader=TemplateLoader)
+compose_all = partial(yaml.compose_all, Loader=TemplateLoader)  # noqa: F405
 
-emit = partial(yaml.emit, Dumper=TemplateDumper)
-serialize = partial(yaml.serialize, Dumper=TemplateDumper)
-serialize_all = partial(yaml.serialize_all, Dumper=TemplateDumper)
-dump = partial(yaml.dump, Dumper=TemplateDumper)
-dump_all = partial(yaml.dump_all, Dumper=TemplateDumper)
+emit = partial(yaml.emit, Dumper=TemplateDumper)  # noqa: F405
+serialize = partial(yaml.serialize, Dumper=TemplateDumper)  # noqa: F405
+serialize_all = partial(
+    yaml.serialize_all, Dumper=TemplateDumper)  # noqa: F405
+dump = partial(yaml.dump, Dumper=TemplateDumper)  # noqa: F405
+dump_all = partial(yaml.dump_all, Dumper=TemplateDumper)  # noqa: F405
 
 add_implicit_resolver = partial(
-    yaml.add_implicit_resolver, Loader=TemplateLoader, Dumper=TemplateDumper)
+    yaml.add_implicit_resolver,
+    Loader=TemplateLoader, Dumper=TemplateDumper  # noqa: F405
+)
 add_path_resolver = partial(
-    yaml.add_path_resolver, Loader=TemplateLoader, Dumper=TemplateDumper)
+    yaml.add_path_resolver,
+    Loader=TemplateLoader, Dumper=TemplateDumper  # noqa: F405
+)
 
-add_constructor = partial(yaml.add_constructor, Loader=TemplateLoader)
-add_multi_constructor = partial(yaml.add_multi_constructor, Loader=TemplateLoader)
+add_constructor = partial(
+    yaml.add_constructor, Loader=TemplateLoader)  # noqa: F405
+add_multi_constructor = partial(
+    yaml.add_multi_constructor, Loader=TemplateLoader)  # noqa: F405
 
-add_representer = partial(yaml.add_representer, Dumper=TemplateDumper)
-add_multi_representer = partial(yaml.add_multi_representer, Dumper=TemplateDumper)
+add_representer = partial(
+    yaml.add_representer, Dumper=TemplateDumper)  # noqa: F405
+add_multi_representer = partial(
+    yaml.add_multi_representer, Dumper=TemplateDumper)  # noqa: F405
 
 
 class YAMLObject(yaml.YAMLObject):
-    yaml_loader = TemplateLoader
-    yaml_dumper = TemplateDumper
+    yaml_loader = TemplateLoader  # noqa: F405
+    yaml_dumper = TemplateDumper  # noqa: F405

@@ -181,7 +181,6 @@ class ForNode(yaml.ScalarNode):
                 'invalid for expression', self.start_mark)
         names, = m.groups()
         expr = self.value[m.end():].strip()
-        namelist = [n.strip() for n in names.split(',')]
         value = []
         globals = get_globals(loader, ctx)
         for i in eval(expr, globals, ctx):

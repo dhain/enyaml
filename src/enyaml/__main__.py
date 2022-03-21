@@ -4,15 +4,22 @@
 
 import sys
 import argparse
-from . import *
+from . import Context, dump_all, render_all
 
 
 parser = argparse.ArgumentParser(
-    description='Render YAML templates.')
+    description='Render YAML templates.'
+)
 parser.add_argument(
-    'infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+    'infile', nargs='?',
+    type=argparse.FileType('r'),
+    default=sys.stdin
+)
 parser.add_argument(
-    '--outfile', '-o', type=argparse.FileType('w'), default=sys.stdout)
+    '--outfile', '-o',
+    type=argparse.FileType('w'),
+    default=sys.stdout
+)
 
 
 def main():
