@@ -44,6 +44,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#writing-a-simple-template">Writing a Simple Template</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rendering-a-template">Rendering a Template</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rendering-within-python">Rendering Within Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a></li>
@@ -115,10 +116,15 @@ argument:</p>
 <div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">enyaml</span>
 
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ctx</span> <span class="o">=</span> <span class="n">enyaml</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">enyaml</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;helloworld.yaml&#39;</span><span class="p">),</span> <span class="n">ctx</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">enyaml</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">ctx</span><span class="p">)</span>   <span class="c1"># filename = &#39;helloworld.yaml&#39;</span>
 <span class="go">{&#39;foo&#39;: &#39;bar&#39;, &#39;mygreeting&#39;: &#39;Hello, Guido!&#39;}</span>
 </pre></div>
 </div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Permalink to this headline"></a></h2>
+<p>Once you have ENYAML installed, you can get started writing templates. See
+<a class="reference internal" href="syntax"><span class="doc">Template Syntax</span></a> to learn how.</p>
 </section>
 </section>
 

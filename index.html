@@ -71,13 +71,15 @@
 <h1>ENYAML: Evaluation Notation YAML<a class="headerlink" href="#enyaml-evaluation-notation-yaml" title="Permalink to this headline"></a></h1>
 <p>Basically, it’s a templating language for YAML documents.</p>
 <p>Here’s a simple example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="w"> </span><span class="nt">_</span><span class="p">:</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
-<span class="linenos">2</span><span class="w">   </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
-<span class="linenos">3</span><span class="w"> </span><span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;Hello,</span><span class="nv"> </span><span class="s">{name}!&quot;</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guido</span><span class="w"></span>
+<span class="nn">---</span><span class="w"></span>
+<span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="kt">!$f</span><span class="w"> </span><span class="s">&quot;Hello,</span><span class="nv"> </span><span class="s">{name}!&quot;</span><span class="w"></span>
 </pre></div>
 </div>
-<p>When rendered, the resulting YAML document would look like this:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="w"> </span><span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello, Guido!</span><span class="w"></span>
+<p>When rendered:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">salutation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello, Guido!</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Traditional approaches to templating YAML, eg. jinja+yaml from the saltstack
@@ -93,9 +95,19 @@ directly, or dump it back out to YAML, which is guaranteed to be valid.</p>
 <li class="toctree-l2"><a class="reference internal" href="getting-started#writing-a-simple-template">Writing a Simple Template</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting-started#rendering-a-template">Rendering a Template</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting-started#rendering-within-python">Rendering Within Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started#next-steps">Next Steps</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="syntax">Template Syntax</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="syntax#a-simple-example">A Simple Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#the-context">The Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#setting-context-variables">Setting Context Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#format-string-expressions">Format String Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#loops">Loops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="syntax#conditionals">Conditionals</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api">API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api#module-enyaml">High-Level API</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api#module-enyaml.util">Context</a></li>

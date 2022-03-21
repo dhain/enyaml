@@ -40,7 +40,16 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting-started">Getting Started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Template Syntax</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Template Syntax</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a-simple-example">A Simple Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-context">The Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-context-variables">Setting Context Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#format-string-expressions">Format String Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loops">Loops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conditionals">Conditionals</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="LICENSE">License</a></li>
 </ul>
@@ -70,6 +79,86 @@
              
   <section id="template-syntax">
 <h1>Template Syntax<a class="headerlink" href="#template-syntax" title="Permalink to this headline"></a></h1>
+<p>ENYAML templates are simply YAML documents. Control structures are marked up
+using YAML tags.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fully qualified tags begin with <code class="docutils literal notranslate"><span class="pre">tag:enyaml.org,2022:</span></code>, and can be
+aliased using the <code class="docutils literal notranslate"><span class="pre">%TAG</span></code> directive in your YAML documents. This can
+usually be omitted, however, because the <a class="reference internal" href="api#enyaml.loader.TemplateLoader" title="enyaml.loader.TemplateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLoader</span></code></a> class
+aliases this prefix to <code class="docutils literal notranslate"><span class="pre">!</span></code> by default.</p>
+</div>
+<section id="a-simple-example">
+<h2>A Simple Example<a class="headerlink" href="#a-simple-example" title="Permalink to this headline"></a></h2>
+<p>The following is a simple example template that uses the <a class="reference internal" href="#expressions" title="tag:enyaml.org,2022:$"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!$</span></code></a> tag to
+evaluate an expression:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1 + 1</span><span class="w"></span>
+</pre></div>
+</div>
+<p>When rendered, this template outputs:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="the-context">
+<h2>The Context<a class="headerlink" href="#the-context" title="Permalink to this headline"></a></h2>
+<p>Templates are rendered with a <a class="reference internal" href="api#enyaml.util.Context" title="enyaml.util.Context"><code class="xref py py-class docutils literal notranslate"><span class="pre">Context</span></code></a>. The Context is a mapping of
+variable names to values. This allows you to provide variables to the template
+for rendering, and allows templates to read and set variables during rendering.</p>
+</section>
+<section id="setting-context-variables">
+<h2>Setting Context Variables<a class="headerlink" href="#setting-context-variables" title="Permalink to this headline"></a></h2>
+<p>You can set Context variables by defining a YAML mapping with the
+<a class="reference internal" href="#setting-context-variables" title="tag:enyaml.org,2022:set"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!set</span></code></a> tag. These mapping nodes will not appear in the rendered output
+of the template. If a set node appears within a sequence or mapping, that item
+will be removed. The variables will be updated as this node is processed, so
+generally, expressions accessing these variables <em>after</em> the set node in the
+source template will see the updated values. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
+<span class="w">  </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!set</span><span class="w"></span>
+<span class="w">  </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Will render as:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Context variables persist across documents in a given template file. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">---</span><span class="w"></span>
+<span class="kt">!set</span><span class="w"></span>
+<span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+
+<span class="nn">---</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!$</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Will render as:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="expressions">
+<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline"></a></h2>
+<p>As seen above, you can access Context variables using expression nodes.
+Expression nodes are represented by the <a class="reference internal" href="#expressions" title="tag:enyaml.org,2022:$"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!$</span></code></a> tag, and are replaced by
+the value of the expression.</p>
+</section>
+<section id="format-string-expressions">
+<h2>Format String Expressions<a class="headerlink" href="#format-string-expressions" title="Permalink to this headline"></a></h2>
+<p>Format string nodes are represented by the <a class="reference internal" href="#format-string-expressions" title="tag:enyaml.org,2022:$f"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!$f</span></code></a> tag.</p>
+</section>
+<section id="loops">
+<h2>Loops<a class="headerlink" href="#loops" title="Permalink to this headline"></a></h2>
+<p>Loops are made by the <a class="reference internal" href="#loops" title="tag:enyaml.org,2022:for"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!for</span></code></a> tag.</p>
+</section>
+<section id="conditionals">
+<h2>Conditionals<a class="headerlink" href="#conditionals" title="Permalink to this headline"></a></h2>
+<p>Conditionals are made by the <a class="reference internal" href="#conditionals" title="tag:enyaml.org,2022:if"><code class="xref tmpl tmpl-tag docutils literal notranslate"><span class="pre">!if</span></code></a> tag.</p>
+</section>
 </section>
 
 
