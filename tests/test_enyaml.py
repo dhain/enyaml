@@ -31,6 +31,8 @@ SENTINEL = SENTINEL()
 
 
 def test_roundtrip(ctx, roundtrip_loader, roundtrip_file):
-    rendered = list(iter(lambda: roundtrip_loader.render_data(ctx), SENTINEL))
-    expected = list(iter(roundtrip_loader.get_data, None))
-    assert rendered == expected, roundtrip_file.name
+    while roundtrip_loader.check_data():
+        rendered = roundtrip_loader.render_data(ctx)
+        assert roundtrip_loader.get_data() == 'vvv'
+        expected = roundtrip_loader.get_data()
+        assert rendered == expected, str(roundtrip_loader.peek_event().start_mark)

@@ -1,0 +1,22 @@
+foo: !if [false, moo, true, foo]
+bar: !if [false, moo, bar]
+baz: !if [false, moo]
+--- vvv
+---
+foo: foo
+bar: bar
+
+
+---
+- !if [false, moo, true, foo]
+- !if [false, moo, bar]
+- !if [false, moo]
+--- vvv
+---
+- foo
+- bar
+
+
+--- !if [false, moo, foo]
+--- vvv
+--- foo

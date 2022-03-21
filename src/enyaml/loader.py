@@ -62,28 +62,20 @@ class TemplateLoader(yaml.SafeLoader):
         if node:
             return self.construct_document(node)
 
-    def _strip_tmpl_tags(self, node):
-        if hasattr(node, 'subtag'):
-            node.tag = node.subtag or self.resolve(
-                node.node_type, node.value, (True, False))
-
     def get_data(self):
         if self.check_node():
             node = self.get_node()
-            self._strip_tmpl_tags(node)
+            if isinstance(node, nodes.BaseTemplateNode):
+                node._detemplify(self, True, True)
             return self.construct_document(node)
 
     def get_single_data(self):
         node = self.get_single_node()
         if node is not None:
-            self._strip_tmpl_tags(node)
+            if isinstance(node, nodes.BaseTemplateNode):
+                node._detemplify(self, True, True)
             return self.construct_document(node)
         return None
-
-    def construct_object(self, node, deep=False):
-        if getattr(node, 'skip_render', False):
-            return node
-        return super().construct_object(node, deep)
 
     def parse_node(self, block=False, indentless_sequence=False):
         event = super().parse_node(block, indentless_sequence)
@@ -96,7 +88,7 @@ class TemplateLoader(yaml.SafeLoader):
             event.tag = f'{nodes.TAG_PREFIX}tmpl'
         elif not event.tag.startswith(nodes.TAG_PREFIX):
             event.tag = f'{nodes.TAG_PREFIX}tmpl:{event.tag}'
-        event.basetag, event.subtag, event.skip_render = nodes.split_tag(event.tag)
+        event.basetag, event.subtag, event.flags = nodes.split_tag(event.tag)
         if event.subtag:
             m = TAG_RX.match(event.subtag)
             if m:
@@ -104,7 +96,7 @@ class TemplateLoader(yaml.SafeLoader):
                 if handle:
                     event.subtag = self.tag_handles[handle]+suffix
                     event.tag = nodes.unsplit_tag(
-                        event.basetag, event.subtag, event.skip_render)
+                        event.basetag, event.subtag, event.flags)
         return event
 
     def compose_node(self, parent, index):
@@ -119,7 +111,7 @@ class TemplateLoader(yaml.SafeLoader):
                 continue
             break
         node.subtag = event.subtag
-        node.skip_render = event.skip_render
+        node.flags = event.flags
         return node
 
 

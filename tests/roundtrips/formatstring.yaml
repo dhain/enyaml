@@ -6,12 +6,13 @@ var3:
   - 2
 
 --- !$f 'foo {var1}' #'
---- !$f 'one {var2} two' #'
---- !$f 'list {var3}' #'
-
----
-vvv
-
+--- vvv
 --- foo foo
+
+--- !$f 'one {var2} two' #'
+--- vvv
 --- one 1 two
+
+--- !$f 'list {var3}' #'
+--- vvv
 --- 'list [1, 2]'

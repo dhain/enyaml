@@ -1,0 +1,98 @@
+---
+!set
+items: [bar, quux]
+tuples: [[foo, 1], [bar, 2]]
+
+
+---
+- foo
+- !for i in items: !$ i
+- baz
+--- vvv
+---
+- foo
+- bar
+- quux
+- baz
+
+
+---
+foo: 1
+<<:
+  !for i in items:
+    bar: 1
+    item: !$ i
+baz: 1
+--- vvv
+---
+foo: 1
+bar: 1
+item: bar
+baz: 1
+
+
+---
+- foo: 1
+  <<:
+    !for i in items:
+      bar: 1
+      item: !$ i
+- baz: 1
+--- vvv
+---
+- foo: 1
+  bar: 1
+  item: bar
+- baz: 1
+
+
+---
+- foo
+- !for i in items: !if
+  - !$ "i == 'bar'" #
+  - !$ i
+- baz
+--- vvv
+---
+- foo
+- bar
+- baz
+
+
+---
+foo: 1
+<<:
+  !for i in items: !if
+    - !$ i == 'quux'
+    - bar: 1
+      item: !$ i
+baz: 1
+--- vvv
+---
+foo: 1
+bar: 1
+item: quux
+baz: 1
+
+
+---
+!for k, v in tuples:
+  !$ k: !$ v
+--- vvv
+---
+- foo: 1
+- bar: 2
+
+
+---
+foos:
+  !for k, v in tuples:
+    moo: moo
+    !$ k: !$ v
+--- vvv
+---
+foos:
+  - moo: moo
+    foo: 1
+  - moo: moo
+    bar: 2

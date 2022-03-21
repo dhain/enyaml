@@ -8,43 +8,49 @@ __all__ = [
     'BaseCollectionTemplateNode',
     'SequenceTemplateNode',
     'MappingTemplateNode',
+    'ForNode',
     'SetterNode',
     'ExpressionNode',
     'FormatStringNode',
     'IfNode',
-    'SequenceForNode',
-    'MappingForNode',
 ]
 
+import re
 import copy
 import functools
 import yaml
 
 
 TAG_PREFIX = 'tag:enyaml.org,2022:'
+FLAGS = '~'
+FOR_RX = re.compile(r'((?:(?:^|\s*,\s*)[a-zA-Z_]\w*)+)\s+in\s')
 
 
 def split_tag(tag):
     if tag.startswith(TAG_PREFIX):
         basetag, *subtag = tag[len(TAG_PREFIX):].split(':', 1)
-        skip_render = (basetag[-1] == '~')
-        if skip_render:
-            basetag = basetag[:-1]
+        i = len(basetag)
+        while i > 0:
+            if basetag[i-1] in FLAGS:
+                i -= 1
+            else:
+                break
+        basetag, flags = basetag[:i], basetag[i:]
         subtag = subtag[0] if subtag else None
-        return basetag, subtag, skip_render
+        return basetag, subtag, flags
     return None, None, None
 
 
-def unsplit_tag(basetag, subtag, skip_render):
+def unsplit_tag(basetag, subtag, flags):
     return ''.join((
         TAG_PREFIX, basetag,
-        '~' if skip_render else '',
+        ''.join(flags),
         ':'+subtag if subtag else ''
     ))
 
 
 def maybe_render(node, loader, ctx):
-    if hasattr(node, 'render') and not node.skip_render:
+    if hasattr(node, 'render') and '~' not in node.flags:
         return node.render(loader, ctx)
     return node
 
@@ -77,16 +83,17 @@ class BaseTemplateNode:
             node.subtag = None
         return node
 
+    def _detemplify(self, loader, implicit=True, deep=False):
+        self.tag = self.subtag or loader.resolve(
+            self.node_type, self.value, (implicit, False))
+        self.__class__ = self.node_type
+        self.__dict__.pop('subtag', None)
+        self.__dict__.pop('flags', None)
+
     def make_result_node(self, loader, value, implicit=True):
         node = copy.copy(self)
-        node.__class__ = self.node_type
-        node.__dict__.pop('subtag', None)
-        node.__dict__.pop('skip_render', None)
-        if self.subtag is None:
-            node.tag = loader.resolve(self.node_type, value, (implicit, False))
-        else:
-            node.tag = self.subtag
         node.value = value
+        node._detemplify(loader, implicit)
         return node
 
     def render(self, loader, ctx):
@@ -96,55 +103,86 @@ class BaseTemplateNode:
 class ScalarTemplateNode(BaseTemplateNode, yaml.ScalarNode):
     node_type = yaml.ScalarNode
 
-    def __init__(
-        self, value, start_mark=None, end_mark=None,
-        style=None, subtag=None, skip_render=False
-    ):
-        self.subtag = subtag
-        self.skip_render = skip_render
-        tag = unsplit_tag(self.basetag, subtag, skip_render)
-        yaml.ScalarNode.__init__(
-            self, tag, value, start_mark, end_mark, style)
-
 
 class BaseCollectionTemplateNode(BaseTemplateNode):
-    def __init__(
-        self, value, start_mark=None, end_mark=None,
-        flow_style=None, subtag=None, skip_render=False
-    ):
-        self.subtag = subtag
-        self.skip_render = skip_render
-        tag = unsplit_tag(self.basetag, subtag, skip_render)
-        yaml.CollectionNode.__init__(
-            self, tag, value, start_mark, end_mark, flow_style)
-
-    def render_value(self, loader, ctx):
-        return self.value
+    pass
 
 
 class SequenceTemplateNode(BaseCollectionTemplateNode, yaml.SequenceNode):
     node_type = yaml.SequenceNode
 
+    def _detemplify(self, loader, implicit=True, deep=False):
+        super()._detemplify(loader, implicit, deep)
+        if deep:
+            for node in self.value:
+                if isinstance(node, BaseTemplateNode):
+                    node._detemplify(loader, implicit, deep)
+
     def render(self, loader, ctx):
         value = []
-        for item in self.render_value(loader, ctx):
+        for item in self.value:
             item = maybe_render(item, loader, ctx)
             if item is not None:
-                value.append(item)
+                if isinstance(item, ForResult):
+                    value.extend(item.value)
+                else:
+                    value.append(item)
         return self.make_result_node(loader, value)
 
 
 class MappingTemplateNode(BaseCollectionTemplateNode, yaml.MappingNode):
     node_type = yaml.MappingNode
 
+    def _detemplify(self, loader, implicit=True, deep=False):
+        super()._detemplify(loader, implicit, deep)
+        if deep:
+            for key_node, value_node in self.value:
+                if isinstance(key_node, BaseTemplateNode):
+                    key_node._detemplify(loader, implicit, deep)
+                if isinstance(value_node, BaseTemplateNode):
+                    value_node._detemplify(loader, implicit, deep)
+
     def render(self, loader, ctx):
         value = []
-        for item_key, item_value in self.render_value(loader, ctx):
+        for item_key, item_value in self.value:
+            if isinstance(item_key, ForNode):
+                if len(self.value) > 1:
+                    raise ValueError('not expecting other items')
+                return item_key.render_items(loader, ctx, item_value)
             item_key = maybe_render(item_key, loader, ctx)
             item_value = maybe_render(item_value, loader, ctx)
             if None not in (item_key, item_value):
                 value.append((item_key, item_value))
         return self.make_result_node(loader, value)
+
+
+class ForResult(yaml.SequenceNode):
+    pass
+
+
+class ForNode(yaml.ScalarNode):
+    node_type = yaml.ScalarNode
+    basetag = 'for'
+
+    def render_items(self, loader, ctx, tmpl):
+        m = FOR_RX.match(self.value)
+        if m is None:
+            raise SyntaxError('invalid for expression')
+        names, = m.groups()
+        expr = self.value[m.end():].strip()
+        namelist = [n.strip() for n in names.split(',')]
+        value = []
+        globals = get_globals(loader, ctx)
+        for i in eval(expr, globals, ctx):
+            with ctx.push():
+                with ctx.push({'i': i}, 1):
+                    exec(f'{names} = i', globals, ctx)
+                node = maybe_render(tmpl, loader, ctx)
+                if node is not None:
+                    value.append(node)
+        tag = self.subtag or loader.resolve(
+            yaml.SequenceNode, None, (None, None))
+        return ForResult(tag, value)
 
 
 class SetterNode(MappingTemplateNode):
@@ -184,7 +222,6 @@ class SetterNode(MappingTemplateNode):
 
        {'foo': 1, 'bar': 1, 'quux': 1, 'qat': 1}
     """
-
     basetag = 'set'
 
     def render(self, loader, ctx):
@@ -234,10 +271,8 @@ class ExpressionNode(ScalarTemplateNode):
     def render(self, loader, ctx):
         globals = get_globals(loader, ctx)
         value = eval(self.value, globals, ctx)
-        if isinstance(value, BaseTemplateNode):
+        if isinstance(value, yaml.Node):
             return maybe_render(value, loader, ctx)
-        elif isinstance(value, yaml.Node):
-            return value
         return self.make_result_node(loader, value, implicit=False)
 
 
@@ -267,8 +302,7 @@ class FormatStringNode(ScalarTemplateNode):
     def render(self, loader, ctx):
         dct = get_globals(loader, ctx)
         dct.update(ctx)
-        return self.make_result_node(
-            loader, self.value.format(**dct))
+        return self.make_result_node(loader, self.value.format(**dct))
 
 
 class IfNode(SequenceTemplateNode):
@@ -295,150 +329,17 @@ class IfNode(SequenceTemplateNode):
 
     def render(self, loader, ctx):
         rest = self.value
+        if len(rest) < 2:
+            raise ValueError('expecting more')
         while rest:
             if len(rest) == 1:
                 result, = rest
                 break
             test, result, *rest = rest
-            test = loader.construct_object(maybe_render(test, loader, ctx), deep=True)
-            if test:
+            if loader.construct_object(
+                maybe_render(test, loader, ctx), deep=True
+            ):
                 break
         else:
             return None
         return maybe_render(result, loader, ctx)
-
-
-class BaseForNode(BaseTemplateNode):
-    basetag = 'for'
-
-    def _forinfo(self, loader, ctx):
-        items = None
-        ret_tmpl = None
-        if_tmpl = None
-        for left, right in self._value():
-            if left.value == 'ret':
-                ret_tmpl = right
-            elif left.value == 'if':
-                if_tmpl = right
-            elif items is None:
-                items = left
-                arglist = right
-            else:
-                raise ValueError('items already set')
-        arglist = loader.construct_object(maybe_render(arglist, loader, ctx), deep=True)
-        if isinstance(arglist, str):
-            arglist = (arglist,)
-        arglist = ', '.join(arglist)
-        code = compile(f'{arglist} = item', '', 'exec')
-        return items, ret_tmpl, if_tmpl, code
-
-    def render_value(self, loader, ctx):
-        items, ret_tmpl, if_tmpl, code = self._forinfo(loader, ctx)
-        globals = get_globals(loader, ctx)
-        items = maybe_render(items, loader, ctx)
-        for item in loader.construct_object(items, deep=True):
-            with ctx.push():
-                with ctx.push({'item': item}, 1):
-                    exec(code, globals, ctx)
-                if if_tmpl is None:
-                    test = True
-                else:
-                    test = loader.construct_object(
-                        maybe_render(if_tmpl, loader, ctx), deep=True)
-                if not test:
-                    continue
-                yield maybe_render(ret_tmpl, loader, ctx)
-
-
-class SequenceForNode(BaseForNode, SequenceTemplateNode):
-    """Represents a ``!for`` node with sequence value, AKA list comprehension.
-
-    When rendered, constructs a sequence containing matching values from the
-    input sequence. Syntactically, this is a single-element sequence whose sole
-    item is a parameter mapping. The parameter mapping consists of the following:
-
-    .. code-block:: yaml
-
-       <sequence>: <list of names>
-       ret: <result template>
-       if: <condition> (optional)
-
-    The *result template* and *condition* are evaluated for each item in the
-    input sequence, assigning the item to the name(s) specified in a special
-    Context scope. If the *condition* evaluates as true, then the resulting
-    sequence will include the (rendered) result template. For example:
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       myseq:
-       - item 1
-       - OMITTED
-       - item 2
-
-       ---
-       !for [{
-         !$ myseq: i,
-         ret: !$f "This is {i}",
-         if: !$ "i != 'OMITTED'"
-       }]
-
-    would result in:
-
-    .. code-block:: yaml
-
-       - This is item 1
-       - This is item 2
-    """
-    def _value(self):
-        value, = self.value
-        return value.value
-
-
-class MappingForNode(BaseForNode, MappingTemplateNode):
-    """Represents a ``!for`` node with mapping value, AKA dict comprehension.
-
-    When rendered, constructs a mapping containing matching values from the
-    input sequence. Syntactically, this is a parameter mapping. The parameter
-    mapping consists of the following:
-
-    .. code-block:: yaml
-
-       <sequence>: <list of names>
-       ret: <result template>
-       if: <condition> (optional)
-
-    The *result template* and *condition* are evaluated for each item in the
-    input sequence, assigning the item to the name(s) specified in a special
-    Context scope. If the *condition* evaluates as true, then the resulting
-    mapping will be merged with the (rendered) result template. For example:
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       people:
-       - Alice
-       - Bob
-
-       ---
-       !for
-       !$ people: name
-       ret:
-         !$ name: 1
-
-    would result in:
-
-    .. code-block:: yaml
-
-       Alice: 1
-       Bob: 1
-    """
-    def _value(self):
-        return self.value
-
-    def render_value(self, loader, ctx):
-        for node in super().render_value(loader, ctx):
-            for item in node.value:
-                yield item
