@@ -65,14 +65,14 @@ class TemplateLoader(yaml.SafeLoader):
     def get_data(self):
         if self.check_node():
             node = self.get_node()
-            if isinstance(node, nodes.BaseTemplateNode):
+            if hasattr(node, '_detemplify'):
                 node._detemplify(self, True, True)
             return self.construct_document(node)
 
     def get_single_data(self):
         node = self.get_single_node()
         if node is not None:
-            if isinstance(node, nodes.BaseTemplateNode):
+            if hasattr(node, '_detemplify'):
                 node._detemplify(self, True, True)
             return self.construct_document(node)
         return None

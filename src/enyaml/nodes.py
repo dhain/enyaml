@@ -19,6 +19,7 @@ import re
 import copy
 import functools
 import yaml
+from yaml.constructor import ConstructorError
 
 
 TAG_PREFIX = 'tag:enyaml.org,2022:'
@@ -70,6 +71,10 @@ def get_globals(loader, ctx):
         },
         'ctx': ctx,
     }
+
+
+class RenderError(yaml.error.MarkedYAMLError):
+    pass
 
 
 class BaseTemplateNode:
@@ -147,7 +152,8 @@ class MappingTemplateNode(BaseCollectionTemplateNode, yaml.MappingNode):
         for item_key, item_value in self.value:
             if isinstance(item_key, ForNode):
                 if len(self.value) > 1:
-                    raise ValueError('not expecting other items')
+                    raise RenderError(
+                        'not expecting other items', item_key.start_mark)
                 return item_key.render_items(loader, ctx, item_value)
             item_key = maybe_render(item_key, loader, ctx)
             item_value = maybe_render(item_value, loader, ctx)
@@ -161,13 +167,17 @@ class ForResult(yaml.SequenceNode):
 
 
 class ForNode(yaml.ScalarNode):
+    '''Represents a ``!for`` expression node.
+    '''
     node_type = yaml.ScalarNode
     basetag = 'for'
+    flags = ''
 
     def render_items(self, loader, ctx, tmpl):
         m = FOR_RX.match(self.value)
         if m is None:
-            raise SyntaxError('invalid for expression')
+            raise RenderError(
+                'invalid for expression', self.start_mark)
         names, = m.groups()
         expr = self.value[m.end():].strip()
         namelist = [n.strip() for n in names.split(',')]
@@ -184,44 +194,20 @@ class ForNode(yaml.ScalarNode):
             yaml.SequenceNode, None, (None, None))
         return ForResult(tag, value)
 
+    def render(self, loader, ctx):
+        raise RenderError("can't render a ForNode", self.start_mark)
+
+    def _detemplify(self, loader, implicit=True, deep=False):
+        raise ConstructorError(
+            "can't construct a ForNode", self.start_mark)
+
 
 class SetterNode(MappingTemplateNode):
-    """Represents a ``!set`` node.
+    '''Represents a ``!set`` node.
 
     When rendered, updates the Context with the result. ``!set`` nodes are
     removed from rendered documents.
-
-    Here's an example document:
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       foo: 1
-       bar: 1
-
-       ---
-       output1: !$ foo
-       thisgetsremoved: !set
-         quux: 1
-         qat: !$ foo
-       output2: !$ quux
-       output3: !$ qat
-
-    When rendered, the following document will be produced:
-
-    .. code-block:: yaml
-
-       output1: 1
-       output2: 1
-       output3: 1
-
-    The Context will equal:
-
-    .. code-block::
-
-       {'foo': 1, 'bar': 1, 'quux': 1, 'qat': 1}
-    """
+    '''
     basetag = 'set'
 
     def render(self, loader, ctx):
@@ -237,35 +223,11 @@ class SetterNode(MappingTemplateNode):
 
 
 class ExpressionNode(ScalarTemplateNode):
-    """Represents a ``!$`` node.
+    '''Represents a ``!$`` node.
 
-    When rendered, is replaced by the result of the expression. Examples:
-
-    .. code-block:: yaml
-
-       thisequalsone: !$ 1
-       thisequalstwo: !$ 1 + 1
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       foo: 1
-
-       ---
-       thisequalsone: !$ foo
-       thisequalstwo: !$ foo + 1
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       foo:
-         bar: hello
-
-       ---
-       thisequalsHELLO: !$ "foo['bar'].upper()"
-    """
+    When rendered, is replaced by the result of the expression. If the
+    expression evaluates to a template node, it will be rendered.
+    '''
     basetag = '$'
 
     def render(self, loader, ctx):
@@ -277,26 +239,10 @@ class ExpressionNode(ScalarTemplateNode):
 
 
 class FormatStringNode(ScalarTemplateNode):
-    """Represents a ``!$f`` node.
+    '''Represents a ``!$f`` node.
 
-    When rendered, is replaced by the result of the format-string. Example:
-
-    .. code-block:: yaml
-
-       ---
-       !set
-       title: Mr.
-       name: Guido
-
-       ---
-       greeting: !$f 'Hello, {title} {name}!'
-
-    The rendered output:
-
-    .. code-block:: yaml
-
-       greeting: Hello, Mr. Guido!
-    """
+    When rendered, is replaced by the result of the format-string.
+    '''
     basetag = '$f'
 
     def render(self, loader, ctx):
@@ -306,25 +252,12 @@ class FormatStringNode(ScalarTemplateNode):
 
 
 class IfNode(SequenceTemplateNode):
-    """Represents an ``!if`` node.
+    '''Represents an ``!if`` node.
 
     When rendered, is replaced by the first matching node. If no nodes match,
     but a default is provided, then will be replaced by the default node. If no
-    default is provided, then node will not appear in output.  Examples:
-
-    .. code-block:: yaml
-
-       thisisbar: !if [
-         false, foo,
-         true, bar
-       ]
-       thisisdefault: !if [
-         false, foo,
-         false, bar,
-         default
-       ]
-       thisisomitted: !if [false, foo]
-    """
+    default is provided, then node will not appear in output.
+    '''
     basetag = 'if'
 
     def render(self, loader, ctx):
