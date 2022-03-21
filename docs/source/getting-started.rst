@@ -32,10 +32,8 @@ argument:
 
 The following output should be produced:
 
-.. code-block:: yaml
-
-   foo: bar
-   mygreeting: Hello, Guido!
+.. tmpl:render::
+   :filename: _static/helloworld.yaml
 
 
 Rendering Within Python
@@ -43,13 +41,19 @@ Rendering Within Python
 
 .. testsetup::
 
-   import os
-   os.chdir('source/_static')
+   filename = 'source/_static/helloworld.yaml'
 
 .. doctest::
 
    >>> import enyaml
 
    >>> ctx = enyaml.Context()
-   >>> enyaml.render(open('helloworld.yaml'), ctx)
+   >>> enyaml.render(open(filename), ctx)   # filename = 'helloworld.yaml'
    {'foo': 'bar', 'mygreeting': 'Hello, Guido!'}
+
+
+Next Steps
+----------
+
+Once you have ENYAML installed, you can get started writing templates. See
+:doc:`syntax` to learn how.

@@ -3,6 +3,7 @@
 # https://enyaml.org/LICENSE
 
 __all__ = [
+    'TAG_PREFIX',
     'BaseTemplateNode',
     'ScalarTemplateNode',
     'BaseCollectionTemplateNode',
@@ -167,7 +168,7 @@ class ForResult(yaml.SequenceNode):
 
 
 class ForNode(yaml.ScalarNode):
-    '''Represents a ``!for`` expression node.
+    '''Represents a :tmpl:tag:`for` expression node.
     '''
     node_type = yaml.ScalarNode
     basetag = 'for'
@@ -203,10 +204,10 @@ class ForNode(yaml.ScalarNode):
 
 
 class SetterNode(MappingTemplateNode):
-    '''Represents a ``!set`` node.
+    '''Represents a :tmpl:tag:`set` node.
 
-    When rendered, updates the Context with the result. ``!set`` nodes are
-    removed from rendered documents.
+    When rendered, updates the Context with the result. :tmpl:tag:`set` nodes
+    are removed from rendered documents.
     '''
     basetag = 'set'
 
@@ -223,7 +224,7 @@ class SetterNode(MappingTemplateNode):
 
 
 class ExpressionNode(ScalarTemplateNode):
-    '''Represents a ``!$`` node.
+    '''Represents a :tmpl:tag:`$` node.
 
     When rendered, is replaced by the result of the expression. If the
     expression evaluates to a template node, it will be rendered.
@@ -239,7 +240,7 @@ class ExpressionNode(ScalarTemplateNode):
 
 
 class FormatStringNode(ScalarTemplateNode):
-    '''Represents a ``!$f`` node.
+    '''Represents a :tmpl:tag:`$f` node.
 
     When rendered, is replaced by the result of the format-string.
     '''
@@ -252,7 +253,7 @@ class FormatStringNode(ScalarTemplateNode):
 
 
 class IfNode(SequenceTemplateNode):
-    '''Represents an ``!if`` node.
+    '''Represents an :tmpl:tag:`if` node.
 
     When rendered, is replaced by the first matching node. If no nodes match,
     but a default is provided, then will be replaced by the default node. If no

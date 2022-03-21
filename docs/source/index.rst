@@ -5,19 +5,14 @@ Basically, it's a templating language for YAML documents.
 
 Here's a simple example:
 
-.. code-block:: yaml
-   :linenos:
+.. tmpl:render::
+   :show-template: When rendered:
 
-    _: !set
-      name: Guido
-    salutation: !$f "Hello, {name}!"
-
-When rendered, the resulting YAML document would look like this:
-
-.. code-block:: yaml
-   :linenos:
-
-    salutation: Hello, Guido!
+   ---
+   !set
+   name: Guido
+   ---
+   salutation: !$f "Hello, {name}!"
 
 Traditional approaches to templating YAML, eg. jinja+yaml from the saltstack
 world, are just text-based templates that produce (hopefully valid) YAML

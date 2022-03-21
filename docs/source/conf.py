@@ -12,7 +12,11 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../../src')))
+sys.path.append(os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../extensions')))
 
 
 # -- Project information -----------------------------------------------------
@@ -33,6 +37,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
+    'enyamlsphinx',
 ]
 
 intersphinx_mapping = {

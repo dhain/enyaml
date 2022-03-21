@@ -42,9 +42,8 @@ def render(stream, ctx, Loader=TemplateLoader):
           ---
           !set
           name: Guido
-
           ---
-          greeting: !$f "Hello, {name}"
+          salutation: !$f "Hello, {name}"
     """
     loader = Loader(stream)
     try:
