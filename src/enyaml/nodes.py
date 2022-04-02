@@ -22,6 +22,8 @@ import functools
 import yaml
 from yaml.constructor import ConstructorError
 
+from .expr import parse as parse_expr
+
 
 TAG_PREFIX = 'tag:enyaml.org,2022:'
 FLAGS = '~'
@@ -231,8 +233,10 @@ class ExpressionNode(ScalarTemplateNode):
     basetag = '$'
 
     def render(self, loader, ctx):
+        expr = parse_expr(self.value)
         globals = get_globals(loader, ctx)
-        value = eval(self.value, globals, ctx)
+        with ctx.push(globals, len(ctx.maps)):
+            value = expr.evaluate(ctx)
         if isinstance(value, yaml.Node):
             return maybe_render(value, loader, ctx)
         return self.make_result_node(loader, value, implicit=False)
@@ -248,7 +252,7 @@ class FormatStringNode(ScalarTemplateNode):
     def render(self, loader, ctx):
         dct = get_globals(loader, ctx)
         dct.update(ctx)
-        return self.make_result_node(loader, self.value.format(**dct))
+        return self.make_result_node(loader, self.value.format_map(dct))
 
 
 class IfNode(SequenceTemplateNode):

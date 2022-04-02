@@ -21,3 +21,6 @@ repository = "https://github.com/dhain/enyaml"
 
 [project.scripts]
 enyaml = "enyaml.__main__:main"
+
+[tool.pytest.ini_options]
+markers = ["expression"]
