@@ -70,6 +70,7 @@ def get_globals(loader, ctx):
     return {
         '__builtins__': {
             'list': list,
+            'zip': zip,
             'render': functools.partial(user_render, loader, ctx),
         },
         'ctx': ctx,

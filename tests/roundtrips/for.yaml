@@ -96,3 +96,17 @@ foos:
     foo: 1
   - moo: moo
     bar: 2
+
+
+---
+foos:
+  !for k, v in zip(*tuples):
+    moo: moo
+    !$ k: !$ v
+--- vvv
+---
+foos:
+  - moo: moo
+    foo: bar
+  - moo: moo
+    1: 2
